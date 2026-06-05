@@ -86,17 +86,22 @@ function ManageLessons() {
           <div key={l.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{i + 1}</div>
-              <div className="font-semibold">{l.title}</div>
+              <div>
+                <div className="font-semibold">{l.title}</div>
+                {isTeacher && canEdit(l) && <div className="text-xs text-primary">{t("addedByYou")}</div>}
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              {courseId && (
+              {courseId && canEdit(l) && (
                 <LessonDialog bookId={bookId} courseId={courseId} lesson={l} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
                   <Button size="icon" variant="ghost"><Pencil className="h-4 w-4" /></Button>
                 </LessonDialog>
               )}
-              <Button size="icon" variant="ghost" onClick={() => handleDelete(l.id)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              {canEdit(l) && (
+                <Button size="icon" variant="ghost" onClick={() => handleDelete(l.id)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              )}
             </div>
           </div>
         ))}
