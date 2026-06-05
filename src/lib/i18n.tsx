@@ -155,6 +155,17 @@ const dict = {
     feature2: "Text, video, audio, and slides in one place.",
     feature3Title: "Easy Access",
     feature3: "Mobile-friendly, smooth on every device.",
+    categories: "Categories",
+    category: "Category",
+    addCategory: "Add Category",
+    editCategory: "Edit Category",
+    deleteCategory: "Delete Category",
+    manageCategories: "Manage Categories",
+    uncategorized: "Uncategorized",
+    selectCategory: "Select category",
+    originalText: "Original Text",
+    translation: "Translation",
+    explanation: "Explanation",
   },
 } as const;
 
