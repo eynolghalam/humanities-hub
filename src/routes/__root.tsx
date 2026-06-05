@@ -41,7 +41,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "حکمت | پلتفرم آموزشی علوم انسانی" },
       { name: "description", content: "پلتفرم آموزشی نوین در حوزه علوم انسانی — دوره‌ها، درس‌ها، ویدیو، صوت و اسلاید." },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
