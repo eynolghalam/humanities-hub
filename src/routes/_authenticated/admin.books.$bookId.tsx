@@ -114,6 +114,7 @@ function ManageLessons() {
 }
 
 function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId: string; courseId: string; lesson?: Lesson; children: React.ReactNode; onSaved: () => void }) {
+  const { user } = useAuth();
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(lesson?.title ?? "");
