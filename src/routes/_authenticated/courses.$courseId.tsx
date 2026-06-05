@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
-import { ChevronLeft, GraduationCap } from "lucide-react";
+import { ChevronLeft, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
@@ -17,12 +17,12 @@ function CourseDetail() {
     queryKey: ["course", courseId],
     queryFn: async () => {
       const { data: course } = await supabase.from("courses").select("*").eq("id", courseId).single();
-      const { data: lessons } = await supabase
-        .from("lessons")
-        .select("id,title,sort_order")
+      const { data: books } = await supabase
+        .from("books")
+        .select("id,title,description,sort_order")
         .eq("course_id", courseId)
         .order("sort_order", { ascending: true });
-      return { course, lessons: lessons ?? [] };
+      return { course, books: books ?? [] };
     },
   });
 
@@ -42,27 +42,25 @@ function CourseDetail() {
         </div>
       )}
 
-      <h2 className="mb-4 text-xl font-bold">{t("lessons")}</h2>
-      {data?.lessons.length === 0 && (
-        <div className="rounded-2xl border border-dashed p-12 text-center text-muted-foreground">{t("noLessons")}</div>
+      <h2 className="mb-4 text-xl font-bold">{t("books")}</h2>
+      {data?.books.length === 0 && (
+        <div className="rounded-2xl border border-dashed p-12 text-center text-muted-foreground">{t("noBooks")}</div>
       )}
-      <div className="space-y-3">
-        {data?.lessons.map((l, i) => (
+      <div className="grid gap-3 sm:grid-cols-2">
+        {data?.books.map((b, i) => (
           <Link
-            key={l.id}
-            to="/lessons/$lessonId"
-            params={{ lessonId: l.id }}
+            key={b.id}
+            to="/books/$bookId"
+            params={{ bookId: b.id }}
             className="group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition hover:border-primary hover:shadow-soft"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
-                {i + 1}
-              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{i + 1}</div>
               <div>
-                <div className="font-semibold">{l.title}</div>
+                <div className="font-semibold">{b.title}</div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <GraduationCap className="h-3 w-3" />
-                  {t("lesson")}
+                  <BookOpen className="h-3 w-3" />
+                  {t("book")}
                 </div>
               </div>
             </div>

@@ -10,18 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/courses/$courseId")({
-  component: ManageLessons,
+  component: ManageBooks,
 });
 
-interface Lesson {
-  id: string; course_id: string; title: string; content: string | null;
-  video_embed: string | null; audio_url: string | null; slide_url: string | null; sort_order: number;
-}
+interface Book { id: string; course_id: string; title: string; description: string | null; sort_order: number }
 
-function ManageLessons() {
+function ManageBooks() {
   const { courseId } = Route.useParams();
   const { isAdmin, loading } = useAuth();
   const { t, dir } = useI18n();
@@ -36,20 +33,20 @@ function ManageLessons() {
     enabled: isAdmin,
   });
 
-  const { data: lessons } = useQuery({
-    queryKey: ["admin-lessons", courseId],
+  const { data: books } = useQuery({
+    queryKey: ["admin-books", courseId],
     queryFn: async () => {
-      const { data } = await supabase.from("lessons").select("*").eq("course_id", courseId).order("sort_order");
-      return (data ?? []) as Lesson[];
+      const { data } = await supabase.from("books").select("*").eq("course_id", courseId).order("sort_order");
+      return (data ?? []) as Book[];
     },
     enabled: isAdmin,
   });
 
   const handleDelete = async (id: string) => {
     if (!confirm(t("confirmDelete"))) return;
-    const { error } = await supabase.from("lessons").delete().eq("id", id);
+    const { error } = await supabase.from("books").delete().eq("id", id);
     if (error) toast.error(error.message);
-    else { toast.success("OK"); qc.invalidateQueries({ queryKey: ["admin-lessons", courseId] }); }
+    else { toast.success("OK"); qc.invalidateQueries({ queryKey: ["admin-books", courseId] }); }
   };
 
   if (!isAdmin) return <p className="text-muted-foreground">{t("loading")}</p>;
@@ -65,102 +62,77 @@ function ManageLessons() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold">{course?.title}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("manageLessons")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("manageBooks")}</p>
         </div>
-        <LessonDialog courseId={courseId} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons", courseId] })}>
-          <Button className="bg-hero text-primary-foreground gap-2"><Plus className="h-4 w-4" />{t("addLesson")}</Button>
-        </LessonDialog>
+        <BookDialog courseId={courseId} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-books", courseId] })}>
+          <Button className="bg-hero text-primary-foreground gap-2"><Plus className="h-4 w-4" />{t("addBook")}</Button>
+        </BookDialog>
       </div>
 
       <div className="space-y-3">
-        {lessons?.map((l, i) => (
-          <div key={l.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+        {books?.map((b, i) => (
+          <div key={b.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{i + 1}</div>
-              <div className="font-semibold">{l.title}</div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{i + 1}</div>
+              <div>
+                <div className="font-semibold">{b.title}</div>
+                {b.description && <div className="text-xs text-muted-foreground line-clamp-1">{b.description}</div>}
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              <LessonDialog courseId={courseId} lesson={l} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons", courseId] })}>
+              <Link to="/admin/books/$bookId" params={{ bookId: b.id }}>
+                <Button variant="outline" size="sm" className="gap-1">
+                  <BookOpen className="h-4 w-4" />
+                  {t("manageLessons")}
+                </Button>
+              </Link>
+              <BookDialog courseId={courseId} book={b} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-books", courseId] })}>
                 <Button size="icon" variant="ghost"><Pencil className="h-4 w-4" /></Button>
-              </LessonDialog>
-              <Button size="icon" variant="ghost" onClick={() => handleDelete(l.id)}>
+              </BookDialog>
+              <Button size="icon" variant="ghost" onClick={() => handleDelete(b.id)}>
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>
           </div>
         ))}
-        {lessons?.length === 0 && (
-          <div className="rounded-2xl border border-dashed p-12 text-center text-muted-foreground">{t("noLessons")}</div>
+        {books?.length === 0 && (
+          <div className="rounded-2xl border border-dashed p-12 text-center text-muted-foreground">{t("noBooks")}</div>
         )}
       </div>
     </div>
   );
 }
 
-function LessonDialog({ courseId, lesson, children, onSaved }: { courseId: string; lesson?: Lesson; children: React.ReactNode; onSaved: () => void }) {
+function BookDialog({ courseId, book, children, onSaved }: { courseId: string; book?: Book; children: React.ReactNode; onSaved: () => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState(lesson?.title ?? "");
-  const [content, setContent] = useState(lesson?.content ?? "");
-  const [videoEmbed, setVideoEmbed] = useState(lesson?.video_embed ?? "");
-  const [sortOrder, setSortOrder] = useState(lesson?.sort_order ?? 0);
-  const [audioFile, setAudioFile] = useState<File | null>(null);
-  const [slideFile, setSlideFile] = useState<File | null>(null);
+  const [title, setTitle] = useState(book?.title ?? "");
+  const [description, setDescription] = useState(book?.description ?? "");
+  const [sortOrder, setSortOrder] = useState(book?.sort_order ?? 0);
   const [saving, setSaving] = useState(false);
-
-  const upload = async (bucket: string, file: File): Promise<string> => {
-    const ext = file.name.split(".").pop();
-    const path = `${courseId}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from(bucket).upload(path, file);
-    if (error) throw error;
-    return path;
-  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    try {
-      let audio_url = lesson?.audio_url ?? null;
-      let slide_url = lesson?.slide_url ?? null;
-      if (audioFile) audio_url = await upload("lesson-audio", audioFile);
-      if (slideFile) slide_url = await upload("lesson-slides", slideFile);
-
-      const payload = { course_id: courseId, title, content, video_embed: videoEmbed, audio_url, slide_url, sort_order: sortOrder };
-      const { error } = lesson
-        ? await supabase.from("lessons").update(payload).eq("id", lesson.id)
-        : await supabase.from("lessons").insert(payload);
-      if (error) throw error;
-      toast.success("OK");
-      onSaved();
-      setOpen(false);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error");
-    } finally {
-      setSaving(false);
-    }
+    const payload = { course_id: courseId, title, description, sort_order: sortOrder };
+    const { error } = book
+      ? await supabase.from("books").update(payload).eq("id", book.id)
+      : await supabase.from("books").insert(payload);
+    setSaving(false);
+    if (error) toast.error(error.message);
+    else { toast.success("OK"); onSaved(); setOpen(false); }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader><DialogTitle>{lesson ? t("editLesson") : t("addLesson")}</DialogTitle></DialogHeader>
+      <DialogContent>
+        <DialogHeader><DialogTitle>{book ? t("editBook") : t("addBook")}</DialogTitle></DialogHeader>
         <form onSubmit={save} className="space-y-4">
           <div className="space-y-2"><Label>{t("title")}</Label><Input required value={title} onChange={e => setTitle(e.target.value)} /></div>
-          <div className="space-y-2"><Label>{t("content")}</Label><Textarea rows={6} value={content} onChange={e => setContent(e.target.value)} /></div>
-          <div className="space-y-2"><Label>{t("videoEmbed")}</Label><Textarea rows={3} value={videoEmbed} onChange={e => setVideoEmbed(e.target.value)} dir="ltr" placeholder='<iframe src="..."></iframe>' /></div>
-          <div className="space-y-2">
-            <Label>{t("audioFile")}</Label>
-            <Input type="file" accept="audio/*" onChange={e => setAudioFile(e.target.files?.[0] ?? null)} />
-            {lesson?.audio_url && !audioFile && <p className="text-xs text-muted-foreground">{lesson.audio_url}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label>{t("slideFile")}</Label>
-            <Input type="file" accept="application/pdf,image/*" onChange={e => setSlideFile(e.target.files?.[0] ?? null)} />
-            {lesson?.slide_url && !slideFile && <p className="text-xs text-muted-foreground">{lesson.slide_url}</p>}
-          </div>
+          <div className="space-y-2"><Label>{t("bookDesc")}</Label><Textarea value={description ?? ""} onChange={e => setDescription(e.target.value)} /></div>
           <div className="space-y-2"><Label>{t("sortOrder")}</Label><Input type="number" value={sortOrder} onChange={e => setSortOrder(Number(e.target.value))} dir="ltr" /></div>
-          <Button type="submit" disabled={saving} className="w-full bg-hero text-primary-foreground">{saving ? t("uploading") : t("save")}</Button>
+          <Button type="submit" disabled={saving} className="w-full bg-hero text-primary-foreground">{saving ? t("loading") : t("save")}</Button>
         </form>
       </DialogContent>
     </Dialog>
