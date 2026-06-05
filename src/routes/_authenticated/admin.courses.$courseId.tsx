@@ -22,17 +22,41 @@ interface Category { id: string; course_id: string; title: string; sort_order: n
 
 function ManageBooks() {
   const { courseId } = Route.useParams();
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, isTeacher, user, loading } = useAuth();
   const { t, dir } = useI18n();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  useEffect(() => { if (!loading && !isAdmin) navigate({ to: "/courses" }); }, [loading, isAdmin, navigate]);
+  useEffect(() => { if (!loading && !isAdmin && !isTeacher) navigate({ to: "/courses" }); }, [loading, isAdmin, isTeacher, navigate]);
+
+  // Does the teacher have course-level access?
+  const { data: hasCourseAccess } = useQuery({
+    queryKey: ["teacher-course-access", user?.id, courseId],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase.from("teacher_course_access").select("id").eq("teacher_id", user.id).eq("course_id", courseId).maybeSingle();
+      return !!data;
+    },
+    enabled: isTeacher,
+  });
+
+  // Which book IDs has the teacher been explicitly granted (book-level)?
+  const { data: grantedBookIds } = useQuery({
+    queryKey: ["teacher-book-ids", user?.id, courseId],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase.from("teacher_book_access").select("book_id, books!inner(course_id)").eq("teacher_id", user.id).eq("books.course_id", courseId);
+      return (data ?? []).map((r: { book_id: string }) => r.book_id);
+    },
+    enabled: isTeacher,
+  });
+
+  const canEditAll = isAdmin || hasCourseAccess === true;
 
   const { data: course } = useQuery({
     queryKey: ["admin-course", courseId],
     queryFn: async () => (await supabase.from("courses").select("*").eq("id", courseId).single()).data,
-    enabled: isAdmin,
+    enabled: isAdmin || isTeacher,
   });
 
   const { data: categories } = useQuery({
@@ -41,16 +65,22 @@ function ManageBooks() {
       const { data } = await supabase.from("book_categories").select("*").eq("course_id", courseId).order("sort_order");
       return (data ?? []) as Category[];
     },
-    enabled: isAdmin,
+    enabled: isAdmin || isTeacher,
   });
 
   const { data: books } = useQuery({
-    queryKey: ["admin-books", courseId],
+    queryKey: ["admin-books", courseId, canEditAll, grantedBookIds],
     queryFn: async () => {
-      const { data } = await supabase.from("books").select("*").eq("course_id", courseId).order("sort_order");
+      let q = supabase.from("books").select("*").eq("course_id", courseId).order("sort_order");
+      // For teacher without course-level access, only show explicitly granted books
+      if (!isAdmin && isTeacher && !hasCourseAccess) {
+        if (!grantedBookIds || grantedBookIds.length === 0) return [] as Book[];
+        q = q.in("id", grantedBookIds);
+      }
+      const { data } = await q;
       return (data ?? []) as Book[];
     },
-    enabled: isAdmin,
+    enabled: isAdmin || (isTeacher && grantedBookIds !== undefined && hasCourseAccess !== undefined),
   });
 
   const invalidateCats = () => qc.invalidateQueries({ queryKey: ["admin-cats", courseId] });
@@ -68,7 +98,7 @@ function ManageBooks() {
     if (error) toast.error(error.message); else { toast.success("OK"); invalidateCats(); invalidateBooks(); }
   };
 
-  if (!isAdmin) return <p className="text-muted-foreground">{t("loading")}</p>;
+  if (!isAdmin && !isTeacher) return <p className="text-muted-foreground">{t("loading")}</p>;
 
   // Group books by category
   const grouped = new Map<string | null, Book[]>();
