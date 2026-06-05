@@ -109,6 +109,7 @@ const dict = {
     notTeacher: "این بخش فقط برای استاد و مدیر است.",
     ownerOnly: "فقط درس‌های افزوده شده توسط شما قابل ویرایش/حذف است.",
     addedByYou: "افزوده شده توسط شما",
+  },
   en: {
     appName: "Hikmat",
     tagline: "Humanities Learning Platform",
