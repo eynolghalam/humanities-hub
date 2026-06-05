@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      books: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "books_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string
@@ -44,6 +82,7 @@ export type Database = {
       lessons: {
         Row: {
           audio_url: string | null
+          book_id: string | null
           content: string | null
           course_id: string
           created_at: string
@@ -56,6 +95,7 @@ export type Database = {
         }
         Insert: {
           audio_url?: string | null
+          book_id?: string | null
           content?: string | null
           course_id: string
           created_at?: string
@@ -68,6 +108,7 @@ export type Database = {
         }
         Update: {
           audio_url?: string | null
+          book_id?: string | null
           content?: string | null
           course_id?: string
           created_at?: string
@@ -79,6 +120,13 @@ export type Database = {
           video_embed?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lessons_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lessons_course_id_fkey"
             columns: ["course_id"]
