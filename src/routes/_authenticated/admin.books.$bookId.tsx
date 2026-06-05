@@ -145,10 +145,10 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
       if (audioFile) audio_url = await upload("lesson-audio", audioFile);
       if (slideFile) slide_url = await upload("lesson-slides", slideFile);
 
-      const payload = { course_id: courseId, book_id: bookId, title, content, original_text: originalText, translation, explanation, video_embed: videoEmbed, audio_url, slide_url, sort_order: sortOrder };
+      const basePayload = { course_id: courseId, book_id: bookId, title, content, original_text: originalText, translation, explanation, video_embed: videoEmbed, audio_url, slide_url, sort_order: sortOrder };
       const { error } = lesson
-        ? await supabase.from("lessons").update(payload).eq("id", lesson.id)
-        : await supabase.from("lessons").insert(payload);
+        ? await supabase.from("lessons").update(basePayload).eq("id", lesson.id)
+        : await supabase.from("lessons").insert({ ...basePayload, created_by: user?.id });
       if (error) throw error;
       toast.success("OK");
       onSaved();
