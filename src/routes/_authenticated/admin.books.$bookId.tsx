@@ -24,17 +24,17 @@ interface Lesson {
 
 function ManageLessons() {
   const { bookId } = Route.useParams();
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, isTeacher, user, loading } = useAuth();
   const { t, dir } = useI18n();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  useEffect(() => { if (!loading && !isAdmin) navigate({ to: "/courses" }); }, [loading, isAdmin, navigate]);
+  useEffect(() => { if (!loading && !isAdmin && !isTeacher) navigate({ to: "/courses" }); }, [loading, isAdmin, isTeacher, navigate]);
 
   const { data: book } = useQuery({
     queryKey: ["admin-book", bookId],
     queryFn: async () => (await supabase.from("books").select("*, courses(id,title)").eq("id", bookId).single()).data,
-    enabled: isAdmin,
+    enabled: isAdmin || isTeacher,
   });
 
   const { data: lessons } = useQuery({
@@ -43,7 +43,7 @@ function ManageLessons() {
       const { data } = await supabase.from("lessons").select("*").eq("book_id", bookId).order("sort_order");
       return (data ?? []) as Lesson[];
     },
-    enabled: isAdmin,
+    enabled: isAdmin || isTeacher,
   });
 
   const handleDelete = async (id: string) => {
@@ -53,7 +53,9 @@ function ManageLessons() {
     else { toast.success("OK"); qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] }); }
   };
 
-  if (!isAdmin) return <p className="text-muted-foreground">{t("loading")}</p>;
+  if (!isAdmin && !isTeacher) return <p className="text-muted-foreground">{t("loading")}</p>;
+
+  const canEdit = (l: Lesson) => isAdmin || (isTeacher && (l as Lesson & { created_by?: string | null }).created_by === user?.id);
 
   const courseId = book?.course_id;
 
@@ -84,17 +86,22 @@ function ManageLessons() {
           <div key={l.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{i + 1}</div>
-              <div className="font-semibold">{l.title}</div>
+              <div>
+                <div className="font-semibold">{l.title}</div>
+                {isTeacher && canEdit(l) && <div className="text-xs text-primary">{t("addedByYou")}</div>}
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              {courseId && (
+              {courseId && canEdit(l) && (
                 <LessonDialog bookId={bookId} courseId={courseId} lesson={l} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
                   <Button size="icon" variant="ghost"><Pencil className="h-4 w-4" /></Button>
                 </LessonDialog>
               )}
-              <Button size="icon" variant="ghost" onClick={() => handleDelete(l.id)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              {canEdit(l) && (
+                <Button size="icon" variant="ghost" onClick={() => handleDelete(l.id)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              )}
             </div>
           </div>
         ))}
@@ -107,6 +114,7 @@ function ManageLessons() {
 }
 
 function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId: string; courseId: string; lesson?: Lesson; children: React.ReactNode; onSaved: () => void }) {
+  const { user } = useAuth();
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(lesson?.title ?? "");
@@ -137,10 +145,10 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
       if (audioFile) audio_url = await upload("lesson-audio", audioFile);
       if (slideFile) slide_url = await upload("lesson-slides", slideFile);
 
-      const payload = { course_id: courseId, book_id: bookId, title, content, original_text: originalText, translation, explanation, video_embed: videoEmbed, audio_url, slide_url, sort_order: sortOrder };
+      const basePayload = { course_id: courseId, book_id: bookId, title, content, original_text: originalText, translation, explanation, video_embed: videoEmbed, audio_url, slide_url, sort_order: sortOrder };
       const { error } = lesson
-        ? await supabase.from("lessons").update(payload).eq("id", lesson.id)
-        : await supabase.from("lessons").insert(payload);
+        ? await supabase.from("lessons").update(basePayload).eq("id", lesson.id)
+        : await supabase.from("lessons").insert({ ...basePayload, created_by: user?.id });
       if (error) throw error;
       toast.success("OK");
       onSaved();

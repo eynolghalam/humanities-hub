@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronLeft, BookOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, BookOpen, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminPanel,
@@ -19,43 +19,74 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 interface Course { id: string; title: string; description: string | null; sort_order: number }
 
 function AdminPanel() {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, isTeacher, user, loading } = useAuth();
   const { t, dir } = useI18n();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
   useEffect(() => {
-    if (!loading && !isAdmin) navigate({ to: "/courses" });
-  }, [loading, isAdmin, navigate]);
+    if (!loading && !isAdmin && !isTeacher) navigate({ to: "/courses" });
+  }, [loading, isAdmin, isTeacher, navigate]);
 
-  const { data: courses } = useQuery({
-    queryKey: ["admin-courses"],
+  // teacher: courses they have access to (course-level OR via any granted book)
+  const { data: teacherCourseIds } = useQuery({
+    queryKey: ["teacher-course-ids", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("courses").select("*").order("sort_order");
-      return (data ?? []) as Course[];
+      if (!user) return [];
+      const [{ data: ca }, { data: ba }] = await Promise.all([
+        supabase.from("teacher_course_access").select("course_id").eq("teacher_id", user.id),
+        supabase.from("teacher_book_access").select("books(course_id)").eq("teacher_id", user.id),
+      ]);
+      const ids = new Set<string>();
+      (ca ?? []).forEach((r: { course_id: string }) => ids.add(r.course_id));
+      (ba ?? []).forEach((r: { books: { course_id: string } | null }) => { if (r.books?.course_id) ids.add(r.books.course_id); });
+      return Array.from(ids);
     },
-    enabled: isAdmin,
+    enabled: isTeacher,
   });
 
-  if (!isAdmin) return <p className="text-muted-foreground">{t("loading")}</p>;
+  const { data: courses } = useQuery({
+    queryKey: ["mgmt-courses", isAdmin, teacherCourseIds],
+    queryFn: async () => {
+      let q = supabase.from("courses").select("*").order("sort_order");
+      if (!isAdmin && isTeacher) {
+        if (!teacherCourseIds || teacherCourseIds.length === 0) return [] as Course[];
+        q = q.in("id", teacherCourseIds);
+      }
+      const { data } = await q;
+      return (data ?? []) as Course[];
+    },
+    enabled: isAdmin || (isTeacher && teacherCourseIds !== undefined),
+  });
+
+  if (!isAdmin && !isTeacher) return <p className="text-muted-foreground">{t("loading")}</p>;
 
   const handleDelete = async (id: string) => {
     if (!confirm(t("confirmDelete"))) return;
     const { error } = await supabase.from("courses").delete().eq("id", id);
     if (error) toast.error(error.message);
-    else { toast.success("OK"); qc.invalidateQueries({ queryKey: ["admin-courses"] }); }
+    else { toast.success("OK"); qc.invalidateQueries({ queryKey: ["mgmt-courses"] }); }
   };
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold">{t("admin")}</h1>
+          <h1 className="text-3xl font-extrabold">{isAdmin ? t("managePanel") : t("teacherPanel")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("courses")}</p>
         </div>
-        <CourseDialog onSaved={() => qc.invalidateQueries({ queryKey: ["admin-courses"] })}>
-          <Button className="bg-hero text-primary-foreground gap-2"><Plus className="h-4 w-4" />{t("addCourse")}</Button>
-        </CourseDialog>
+        <div className="flex gap-2">
+          {isAdmin && (
+            <Link to="/admin/users">
+              <Button variant="outline" className="gap-2"><Users className="h-4 w-4" />{t("manageUsers")}</Button>
+            </Link>
+          )}
+          {isAdmin && (
+            <CourseDialog onSaved={() => qc.invalidateQueries({ queryKey: ["mgmt-courses"] })}>
+              <Button className="bg-hero text-primary-foreground gap-2"><Plus className="h-4 w-4" />{t("addCourse")}</Button>
+            </CourseDialog>
+          )}
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -73,16 +104,20 @@ function AdminPanel() {
             <div className="flex items-center gap-2">
               <Link to="/admin/courses/$courseId" params={{ courseId: c.id }}>
                 <Button variant="outline" size="sm" className="gap-1">
-                  {t("manageLessons")}
+                  {t("manageBooks")}
                   <ChevronLeft className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} />
                 </Button>
               </Link>
-              <CourseDialog course={c} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-courses"] })}>
-                <Button size="icon" variant="ghost"><Pencil className="h-4 w-4" /></Button>
-              </CourseDialog>
-              <Button size="icon" variant="ghost" onClick={() => handleDelete(c.id)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              {isAdmin && (
+                <>
+                  <CourseDialog course={c} onSaved={() => qc.invalidateQueries({ queryKey: ["mgmt-courses"] })}>
+                    <Button size="icon" variant="ghost"><Pencil className="h-4 w-4" /></Button>
+                  </CourseDialog>
+                  <Button size="icon" variant="ghost" onClick={() => handleDelete(c.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         ))}

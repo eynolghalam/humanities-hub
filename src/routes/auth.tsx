@@ -22,6 +22,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [requestedRole, setRequestedRole] = useState<"student" | "teacher">("student");
 
   useEffect(() => {
     if (user) navigate({ to: "/courses" });
@@ -44,12 +45,15 @@ function AuthPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/courses`,
-        data: { full_name: fullName },
+        data: { full_name: fullName, requested_role: requestedRole },
       },
     });
     setLoading(false);
     if (error) toast.error(error.message);
-    else toast.success(t("confirmEmailMsg"));
+    else {
+      toast.success(t("confirmEmailMsg"));
+      if (requestedRole === "teacher") toast.info(t("pendingTeacherMsg"));
+    }
   };
 
   return (
@@ -91,6 +95,24 @@ function AuthPage() {
                 <div className="space-y-2">
                   <Label htmlFor="pw2">{t("password")}</Label>
                   <Input id="pw2" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} dir="ltr" />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("signupAs")}</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setRequestedRole("student")}
+                      className={`rounded-lg border p-3 text-sm font-medium transition ${requestedRole === "student" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}
+                    >{t("studentRole")}</button>
+                    <button
+                      type="button"
+                      onClick={() => setRequestedRole("teacher")}
+                      className={`rounded-lg border p-3 text-sm font-medium transition ${requestedRole === "teacher" ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}
+                    >{t("teacherRole")}</button>
+                  </div>
+                  {requestedRole === "teacher" && (
+                    <p className="text-xs text-muted-foreground">{t("pendingTeacherMsg")}</p>
+                  )}
                 </div>
                 <Button type="submit" disabled={loading} className="w-full bg-hero text-primary-foreground hover:opacity-95">
                   {loading ? t("loading") : t("signup")}

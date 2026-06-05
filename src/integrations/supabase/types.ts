@@ -123,6 +123,7 @@ export type Database = {
           content: string | null
           course_id: string
           created_at: string
+          created_by: string | null
           explanation: string | null
           id: string
           original_text: string | null
@@ -139,6 +140,7 @@ export type Database = {
           content?: string | null
           course_id: string
           created_at?: string
+          created_by?: string | null
           explanation?: string | null
           id?: string
           original_text?: string | null
@@ -155,6 +157,7 @@ export type Database = {
           content?: string | null
           course_id?: string
           created_at?: string
+          created_by?: string | null
           explanation?: string | null
           id?: string
           original_text?: string | null
@@ -187,21 +190,82 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          pending_teacher: boolean
           updated_at: string
         }
         Insert: {
           created_at?: string
           full_name?: string | null
           id: string
+          pending_teacher?: boolean
           updated_at?: string
         }
         Update: {
           created_at?: string
           full_name?: string | null
           id?: string
+          pending_teacher?: boolean
           updated_at?: string
         }
         Relationships: []
+      }
+      teacher_book_access: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          teacher_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          teacher_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_book_access_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_course_access: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          teacher_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          teacher_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_course_access_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -236,9 +300,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      teacher_has_book_access: {
+        Args: { _book_id: string; _user_id: string }
+        Returns: boolean
+      }
+      teacher_has_course_access: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      app_role: "admin" | "student"
+      app_role: "admin" | "student" | "teacher"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -366,7 +438,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "student"],
+      app_role: ["admin", "student", "teacher"],
     },
   },
 } as const
