@@ -24,17 +24,17 @@ interface Lesson {
 
 function ManageLessons() {
   const { bookId } = Route.useParams();
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, isTeacher, user, loading } = useAuth();
   const { t, dir } = useI18n();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  useEffect(() => { if (!loading && !isAdmin) navigate({ to: "/courses" }); }, [loading, isAdmin, navigate]);
+  useEffect(() => { if (!loading && !isAdmin && !isTeacher) navigate({ to: "/courses" }); }, [loading, isAdmin, isTeacher, navigate]);
 
   const { data: book } = useQuery({
     queryKey: ["admin-book", bookId],
     queryFn: async () => (await supabase.from("books").select("*, courses(id,title)").eq("id", bookId).single()).data,
-    enabled: isAdmin,
+    enabled: isAdmin || isTeacher,
   });
 
   const { data: lessons } = useQuery({
@@ -43,7 +43,7 @@ function ManageLessons() {
       const { data } = await supabase.from("lessons").select("*").eq("book_id", bookId).order("sort_order");
       return (data ?? []) as Lesson[];
     },
-    enabled: isAdmin,
+    enabled: isAdmin || isTeacher,
   });
 
   const handleDelete = async (id: string) => {
@@ -53,7 +53,9 @@ function ManageLessons() {
     else { toast.success("OK"); qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] }); }
   };
 
-  if (!isAdmin) return <p className="text-muted-foreground">{t("loading")}</p>;
+  if (!isAdmin && !isTeacher) return <p className="text-muted-foreground">{t("loading")}</p>;
+
+  const canEdit = (l: Lesson) => isAdmin || (isTeacher && (l as Lesson & { created_by?: string | null }).created_by === user?.id);
 
   const courseId = book?.course_id;
 
