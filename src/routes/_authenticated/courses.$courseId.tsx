@@ -1,0 +1,75 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
+import { ChevronLeft, GraduationCap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export const Route = createFileRoute("/_authenticated/courses/$courseId")({
+  component: CourseDetail,
+});
+
+function CourseDetail() {
+  const { courseId } = Route.useParams();
+  const { t, dir } = useI18n();
+
+  const { data } = useQuery({
+    queryKey: ["course", courseId],
+    queryFn: async () => {
+      const { data: course } = await supabase.from("courses").select("*").eq("id", courseId).single();
+      const { data: lessons } = await supabase
+        .from("lessons")
+        .select("id,title,sort_order")
+        .eq("course_id", courseId)
+        .order("sort_order", { ascending: true });
+      return { course, lessons: lessons ?? [] };
+    },
+  });
+
+  return (
+    <div>
+      <Link to="/courses">
+        <Button variant="ghost" size="sm" className="mb-4 gap-1">
+          <ChevronLeft className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} />
+          {t("backToCourses")}
+        </Button>
+      </Link>
+
+      {data?.course && (
+        <div className="bg-card-soft mb-8 rounded-2xl border border-border p-8 shadow-soft">
+          <h1 className="text-3xl font-extrabold">{data.course.title}</h1>
+          {data.course.description && <p className="mt-3 text-muted-foreground">{data.course.description}</p>}
+        </div>
+      )}
+
+      <h2 className="mb-4 text-xl font-bold">{t("lessons")}</h2>
+      {data?.lessons.length === 0 && (
+        <div className="rounded-2xl border border-dashed p-12 text-center text-muted-foreground">{t("noLessons")}</div>
+      )}
+      <div className="space-y-3">
+        {data?.lessons.map((l, i) => (
+          <Link
+            key={l.id}
+            to="/lessons/$lessonId"
+            params={{ lessonId: l.id }}
+            className="group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition hover:border-primary hover:shadow-soft"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
+                {i + 1}
+              </div>
+              <div>
+                <div className="font-semibold">{l.title}</div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <GraduationCap className="h-3 w-3" />
+                  {t("lesson")}
+                </div>
+              </div>
+            </div>
+            <ChevronLeft className={`h-5 w-5 text-muted-foreground group-hover:text-primary ${dir === "ltr" ? "rotate-180" : ""}`} />
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
