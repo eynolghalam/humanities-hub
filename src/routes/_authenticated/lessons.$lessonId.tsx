@@ -49,6 +49,24 @@ function LessonView() {
 
       <h1 className="mb-8 text-3xl font-extrabold">{lesson.title}</h1>
 
+      {lesson.original_text && (
+        <Section icon={BookOpen} title={t("originalText")}>
+          <div className="whitespace-pre-wrap text-foreground leading-loose">{lesson.original_text}</div>
+        </Section>
+      )}
+
+      {lesson.translation && (
+        <Section icon={Languages} title={t("translation")}>
+          <div className="whitespace-pre-wrap text-foreground leading-loose">{lesson.translation}</div>
+        </Section>
+      )}
+
+      {lesson.explanation && (
+        <Section icon={Lightbulb} title={t("explanation")}>
+          <div className="whitespace-pre-wrap text-foreground leading-loose">{lesson.explanation}</div>
+        </Section>
+      )}
+
       {lesson.content && (
         <Section icon={FileText} title={t("description")}>
           <div className="rich-content text-foreground" dangerouslySetInnerHTML={{ __html: lesson.content }} />
