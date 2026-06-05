@@ -110,6 +110,9 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(lesson?.title ?? "");
+  const [originalText, setOriginalText] = useState(lesson?.original_text ?? "");
+  const [translation, setTranslation] = useState(lesson?.translation ?? "");
+  const [explanation, setExplanation] = useState(lesson?.explanation ?? "");
   const [content, setContent] = useState(lesson?.content ?? "");
   const [videoEmbed, setVideoEmbed] = useState(lesson?.video_embed ?? "");
   const [sortOrder, setSortOrder] = useState(lesson?.sort_order ?? 0);
