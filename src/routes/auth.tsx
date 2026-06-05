@@ -22,6 +22,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [requestedRole, setRequestedRole] = useState<"student" | "teacher">("student");
 
   useEffect(() => {
     if (user) navigate({ to: "/courses" });
@@ -44,12 +45,15 @@ function AuthPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/courses`,
-        data: { full_name: fullName },
+        data: { full_name: fullName, requested_role: requestedRole },
       },
     });
     setLoading(false);
     if (error) toast.error(error.message);
-    else toast.success(t("confirmEmailMsg"));
+    else {
+      toast.success(t("confirmEmailMsg"));
+      if (requestedRole === "teacher") toast.info(t("pendingTeacherMsg"));
+    }
   };
 
   return (
