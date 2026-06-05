@@ -9,14 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronLeft, BookOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, BookOpen, Tag } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/courses/$courseId")({
   component: ManageBooks,
 });
 
-interface Book { id: string; course_id: string; title: string; description: string | null; sort_order: number }
+interface Book { id: string; course_id: string; title: string; description: string | null; sort_order: number; category_id: string | null }
+interface Category { id: string; course_id: string; title: string; sort_order: number }
 
 function ManageBooks() {
   const { courseId } = Route.useParams();
@@ -33,6 +35,15 @@ function ManageBooks() {
     enabled: isAdmin,
   });
 
+  const { data: categories } = useQuery({
+    queryKey: ["admin-cats", courseId],
+    queryFn: async () => {
+      const { data } = await supabase.from("book_categories").select("*").eq("course_id", courseId).order("sort_order");
+      return (data ?? []) as Category[];
+    },
+    enabled: isAdmin,
+  });
+
   const { data: books } = useQuery({
     queryKey: ["admin-books", courseId],
     queryFn: async () => {
@@ -42,14 +53,53 @@ function ManageBooks() {
     enabled: isAdmin,
   });
 
-  const handleDelete = async (id: string) => {
+  const invalidateCats = () => qc.invalidateQueries({ queryKey: ["admin-cats", courseId] });
+  const invalidateBooks = () => qc.invalidateQueries({ queryKey: ["admin-books", courseId] });
+
+  const deleteBook = async (id: string) => {
     if (!confirm(t("confirmDelete"))) return;
     const { error } = await supabase.from("books").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("OK"); qc.invalidateQueries({ queryKey: ["admin-books", courseId] }); }
+    if (error) toast.error(error.message); else { toast.success("OK"); invalidateBooks(); }
+  };
+
+  const deleteCategory = async (id: string) => {
+    if (!confirm(t("confirmDelete"))) return;
+    const { error } = await supabase.from("book_categories").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("OK"); invalidateCats(); invalidateBooks(); }
   };
 
   if (!isAdmin) return <p className="text-muted-foreground">{t("loading")}</p>;
+
+  // Group books by category
+  const grouped = new Map<string | null, Book[]>();
+  (books ?? []).forEach(b => {
+    const key = b.category_id ?? null;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(b);
+  });
+
+  const renderBook = (b: Book, i: number) => (
+    <div key={b.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{i + 1}</div>
+        <div>
+          <div className="font-semibold">{b.title}</div>
+          {b.description && <div className="text-xs text-muted-foreground line-clamp-1">{b.description}</div>}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Link to="/admin/books/$bookId" params={{ bookId: b.id }}>
+          <Button variant="outline" size="sm" className="gap-1"><BookOpen className="h-4 w-4" />{t("manageLessons")}</Button>
+        </Link>
+        <BookDialog courseId={courseId} categories={categories ?? []} book={b} onSaved={invalidateBooks}>
+          <Button size="icon" variant="ghost"><Pencil className="h-4 w-4" /></Button>
+        </BookDialog>
+        <Button size="icon" variant="ghost" onClick={() => deleteBook(b.id)}>
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <div>
@@ -59,42 +109,60 @@ function ManageBooks() {
           {t("admin")}
         </Button>
       </Link>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold">{course?.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("manageBooks")}</p>
         </div>
-        <BookDialog courseId={courseId} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-books", courseId] })}>
-          <Button className="bg-hero text-primary-foreground gap-2"><Plus className="h-4 w-4" />{t("addBook")}</Button>
-        </BookDialog>
+        <div className="flex gap-2">
+          <CategoryDialog courseId={courseId} onSaved={invalidateCats}>
+            <Button variant="outline" className="gap-2"><Tag className="h-4 w-4" />{t("addCategory")}</Button>
+          </CategoryDialog>
+          <BookDialog courseId={courseId} categories={categories ?? []} onSaved={invalidateBooks}>
+            <Button className="bg-hero text-primary-foreground gap-2"><Plus className="h-4 w-4" />{t("addBook")}</Button>
+          </BookDialog>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        {books?.map((b, i) => (
-          <div key={b.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{i + 1}</div>
-              <div>
-                <div className="font-semibold">{b.title}</div>
-                {b.description && <div className="text-xs text-muted-foreground line-clamp-1">{b.description}</div>}
+      {(categories?.length ?? 0) > 0 && (
+        <div className="mb-6 rounded-2xl border border-border bg-card-soft p-4">
+          <h2 className="mb-3 text-sm font-bold text-muted-foreground">{t("manageCategories")}</h2>
+          <div className="flex flex-wrap gap-2">
+            {categories!.map(c => (
+              <div key={c.id} className="flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1 text-sm">
+                <Tag className="h-3 w-3 text-primary" />
+                <span>{c.title}</span>
+                <CategoryDialog courseId={courseId} category={c} onSaved={invalidateCats}>
+                  <button className="ms-1 text-muted-foreground hover:text-primary"><Pencil className="h-3 w-3" /></button>
+                </CategoryDialog>
+                <button onClick={() => deleteCategory(c.id)} className="text-muted-foreground hover:text-destructive">
+                  <Trash2 className="h-3 w-3" />
+                </button>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link to="/admin/books/$bookId" params={{ bookId: b.id }}>
-                <Button variant="outline" size="sm" className="gap-1">
-                  <BookOpen className="h-4 w-4" />
-                  {t("manageLessons")}
-                </Button>
-              </Link>
-              <BookDialog courseId={courseId} book={b} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-books", courseId] })}>
-                <Button size="icon" variant="ghost"><Pencil className="h-4 w-4" /></Button>
-              </BookDialog>
-              <Button size="icon" variant="ghost" onClick={() => handleDelete(b.id)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
+            ))}
           </div>
-        ))}
+        </div>
+      )}
+
+      <div className="space-y-6">
+        {categories?.map(c => {
+          const list = grouped.get(c.id) ?? [];
+          if (list.length === 0) return null;
+          return (
+            <div key={c.id}>
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-primary">
+                <Tag className="h-4 w-4" />{c.title}
+              </h3>
+              <div className="space-y-3">{list.map((b, i) => renderBook(b, i))}</div>
+            </div>
+          );
+        })}
+        {(grouped.get(null)?.length ?? 0) > 0 && (
+          <div>
+            <h3 className="mb-3 text-sm font-bold text-muted-foreground">{t("uncategorized")}</h3>
+            <div className="space-y-3">{grouped.get(null)!.map((b, i) => renderBook(b, i))}</div>
+          </div>
+        )}
         {books?.length === 0 && (
           <div className="rounded-2xl border border-dashed p-12 text-center text-muted-foreground">{t("noBooks")}</div>
         )}
@@ -103,18 +171,19 @@ function ManageBooks() {
   );
 }
 
-function BookDialog({ courseId, book, children, onSaved }: { courseId: string; book?: Book; children: React.ReactNode; onSaved: () => void }) {
+function BookDialog({ courseId, categories, book, children, onSaved }: { courseId: string; categories: Category[]; book?: Book; children: React.ReactNode; onSaved: () => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(book?.title ?? "");
   const [description, setDescription] = useState(book?.description ?? "");
   const [sortOrder, setSortOrder] = useState(book?.sort_order ?? 0);
+  const [categoryId, setCategoryId] = useState<string | null>(book?.category_id ?? null);
   const [saving, setSaving] = useState(false);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const payload = { course_id: courseId, title, description, sort_order: sortOrder };
+    const payload = { course_id: courseId, title, description, sort_order: sortOrder, category_id: categoryId };
     const { error } = book
       ? await supabase.from("books").update(payload).eq("id", book.id)
       : await supabase.from("books").insert(payload);
@@ -131,6 +200,50 @@ function BookDialog({ courseId, book, children, onSaved }: { courseId: string; b
         <form onSubmit={save} className="space-y-4">
           <div className="space-y-2"><Label>{t("title")}</Label><Input required value={title} onChange={e => setTitle(e.target.value)} /></div>
           <div className="space-y-2"><Label>{t("bookDesc")}</Label><Textarea value={description ?? ""} onChange={e => setDescription(e.target.value)} /></div>
+          <div className="space-y-2">
+            <Label>{t("category")}</Label>
+            <Select value={categoryId ?? "__none"} onValueChange={v => setCategoryId(v === "__none" ? null : v)}>
+              <SelectTrigger><SelectValue placeholder={t("selectCategory")} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none">{t("uncategorized")}</SelectItem>
+                {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2"><Label>{t("sortOrder")}</Label><Input type="number" value={sortOrder} onChange={e => setSortOrder(Number(e.target.value))} dir="ltr" /></div>
+          <Button type="submit" disabled={saving} className="w-full bg-hero text-primary-foreground">{saving ? t("loading") : t("save")}</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CategoryDialog({ courseId, category, children, onSaved }: { courseId: string; category?: Category; children: React.ReactNode; onSaved: () => void }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState(category?.title ?? "");
+  const [sortOrder, setSortOrder] = useState(category?.sort_order ?? 0);
+  const [saving, setSaving] = useState(false);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const payload = { course_id: courseId, title, sort_order: sortOrder };
+    const { error } = category
+      ? await supabase.from("book_categories").update(payload).eq("id", category.id)
+      : await supabase.from("book_categories").insert(payload);
+    setSaving(false);
+    if (error) toast.error(error.message);
+    else { toast.success("OK"); onSaved(); setOpen(false); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>{category ? t("editCategory") : t("addCategory")}</DialogTitle></DialogHeader>
+        <form onSubmit={save} className="space-y-4">
+          <div className="space-y-2"><Label>{t("title")}</Label><Input required value={title} onChange={e => setTitle(e.target.value)} /></div>
           <div className="space-y-2"><Label>{t("sortOrder")}</Label><Input type="number" value={sortOrder} onChange={e => setSortOrder(Number(e.target.value))} dir="ltr" /></div>
           <Button type="submit" disabled={saving} className="w-full bg-hero text-primary-foreground">{saving ? t("loading") : t("save")}</Button>
         </form>

@@ -14,8 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      book_categories: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       books: {
         Row: {
+          category_id: string | null
           course_id: string
           created_at: string
           description: string | null
@@ -25,6 +53,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_id?: string | null
           course_id: string
           created_at?: string
           description?: string | null
@@ -34,6 +63,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_id?: string | null
           course_id?: string
           created_at?: string
           description?: string | null
@@ -43,6 +73,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "books_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "book_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "books_course_id_fkey"
             columns: ["course_id"]
@@ -86,10 +123,13 @@ export type Database = {
           content: string | null
           course_id: string
           created_at: string
+          explanation: string | null
           id: string
+          original_text: string | null
           slide_url: string | null
           sort_order: number
           title: string
+          translation: string | null
           updated_at: string
           video_embed: string | null
         }
@@ -99,10 +139,13 @@ export type Database = {
           content?: string | null
           course_id: string
           created_at?: string
+          explanation?: string | null
           id?: string
+          original_text?: string | null
           slide_url?: string | null
           sort_order?: number
           title: string
+          translation?: string | null
           updated_at?: string
           video_embed?: string | null
         }
@@ -112,10 +155,13 @@ export type Database = {
           content?: string | null
           course_id?: string
           created_at?: string
+          explanation?: string | null
           id?: string
+          original_text?: string | null
           slide_url?: string | null
           sort_order?: number
           title?: string
+          translation?: string | null
           updated_at?: string
           video_embed?: string | null
         }

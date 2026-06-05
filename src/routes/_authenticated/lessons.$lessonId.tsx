@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, FileText, Video, Music, Download } from "lucide-react";
+import { ChevronLeft, FileText, Video, Music, Download, BookOpen, Languages, Lightbulb } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/lessons/$lessonId")({
   component: LessonView,
@@ -48,6 +48,24 @@ function LessonView() {
       </Link>
 
       <h1 className="mb-8 text-3xl font-extrabold">{lesson.title}</h1>
+
+      {lesson.original_text && (
+        <Section icon={BookOpen} title={t("originalText")}>
+          <div className="whitespace-pre-wrap text-foreground leading-loose">{lesson.original_text}</div>
+        </Section>
+      )}
+
+      {lesson.translation && (
+        <Section icon={Languages} title={t("translation")}>
+          <div className="whitespace-pre-wrap text-foreground leading-loose">{lesson.translation}</div>
+        </Section>
+      )}
+
+      {lesson.explanation && (
+        <Section icon={Lightbulb} title={t("explanation")}>
+          <div className="whitespace-pre-wrap text-foreground leading-loose">{lesson.explanation}</div>
+        </Section>
+      )}
 
       {lesson.content && (
         <Section icon={FileText} title={t("description")}>

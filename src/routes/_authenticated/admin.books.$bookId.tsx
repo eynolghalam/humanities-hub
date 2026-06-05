@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/admin/books/$bookId")({
 interface Lesson {
   id: string; book_id: string | null; course_id: string; title: string; content: string | null;
   video_embed: string | null; audio_url: string | null; slide_url: string | null; sort_order: number;
+  original_text: string | null; translation: string | null; explanation: string | null;
 }
 
 function ManageLessons() {
@@ -109,6 +110,9 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(lesson?.title ?? "");
+  const [originalText, setOriginalText] = useState(lesson?.original_text ?? "");
+  const [translation, setTranslation] = useState(lesson?.translation ?? "");
+  const [explanation, setExplanation] = useState(lesson?.explanation ?? "");
   const [content, setContent] = useState(lesson?.content ?? "");
   const [videoEmbed, setVideoEmbed] = useState(lesson?.video_embed ?? "");
   const [sortOrder, setSortOrder] = useState(lesson?.sort_order ?? 0);
@@ -133,7 +137,7 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
       if (audioFile) audio_url = await upload("lesson-audio", audioFile);
       if (slideFile) slide_url = await upload("lesson-slides", slideFile);
 
-      const payload = { course_id: courseId, book_id: bookId, title, content, video_embed: videoEmbed, audio_url, slide_url, sort_order: sortOrder };
+      const payload = { course_id: courseId, book_id: bookId, title, content, original_text: originalText, translation, explanation, video_embed: videoEmbed, audio_url, slide_url, sort_order: sortOrder };
       const { error } = lesson
         ? await supabase.from("lessons").update(payload).eq("id", lesson.id)
         : await supabase.from("lessons").insert(payload);
@@ -155,6 +159,9 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
         <DialogHeader><DialogTitle>{lesson ? t("editLesson") : t("addLesson")}</DialogTitle></DialogHeader>
         <form onSubmit={save} className="space-y-4">
           <div className="space-y-2"><Label>{t("title")}</Label><Input required value={title} onChange={e => setTitle(e.target.value)} /></div>
+          <div className="space-y-2"><Label>{t("originalText")}</Label><Textarea rows={5} value={originalText} onChange={e => setOriginalText(e.target.value)} /></div>
+          <div className="space-y-2"><Label>{t("translation")}</Label><Textarea rows={5} value={translation} onChange={e => setTranslation(e.target.value)} /></div>
+          <div className="space-y-2"><Label>{t("explanation")}</Label><Textarea rows={5} value={explanation} onChange={e => setExplanation(e.target.value)} /></div>
           <div className="space-y-2"><Label>{t("content")}</Label><Textarea rows={6} value={content} onChange={e => setContent(e.target.value)} /></div>
           <div className="space-y-2"><Label>{t("videoEmbed")}</Label><Textarea rows={3} value={videoEmbed} onChange={e => setVideoEmbed(e.target.value)} dir="ltr" placeholder='<iframe src="..."></iframe>' /></div>
           <div className="space-y-2">
