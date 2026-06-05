@@ -51,10 +51,11 @@ function CourseDetail() {
     </Link>
   );
 
-  const grouped = new Map<string | null, typeof data.books>();
+  type BookRow = { id: string; title: string; description: string | null; sort_order: number; category_id: string | null };
+  const grouped = new Map<string | null, BookRow[]>();
   (data?.books ?? []).forEach(b => {
     const key = b.category_id ?? null;
-    if (!grouped.has(key)) grouped.set(key, [] as typeof data.books);
+    if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(b);
   });
 
