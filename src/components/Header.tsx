@@ -2,11 +2,11 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Shield, Languages } from "lucide-react";
+import { BookOpen, LogOut, Shield, Languages, GraduationCap } from "lucide-react";
 
 export function Header() {
   const { t, lang, setLang } = useI18n();
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isTeacher, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -30,11 +30,11 @@ export function Header() {
               <Button variant="ghost" size="sm">{t("courses")}</Button>
             </Link>
           )}
-          {isAdmin && (
+          {(isAdmin || isTeacher) && (
             <Link to="/admin">
               <Button variant="ghost" size="sm" className="gap-1.5">
-                <Shield className="h-4 w-4" />
-                {t("admin")}
+                {isAdmin ? <Shield className="h-4 w-4" /> : <GraduationCap className="h-4 w-4" />}
+                {isAdmin ? t("managePanel") : t("teacherPanel")}
               </Button>
             </Link>
           )}
