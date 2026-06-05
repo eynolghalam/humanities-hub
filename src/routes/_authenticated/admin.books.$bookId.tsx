@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/admin/books/$bookId")({
 interface Lesson {
   id: string; book_id: string | null; course_id: string; title: string; content: string | null;
   video_embed: string | null; audio_url: string | null; slide_url: string | null; sort_order: number;
+  original_text: string | null; translation: string | null; explanation: string | null;
 }
 
 function ManageLessons() {
