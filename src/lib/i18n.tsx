@@ -1,13 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-type Lang = "fa" | "en";
+export type Lang = "fa" | "en" | "ar";
 
 const dict = {
   fa: {
-    appName: "حکمت",
-    tagline: "پلتفرم آموزشی علوم انسانی",
+    appName: "حوزتنا",
+    tagline: "پلتفرم آموزشی علوم حوزوی",
     heroTitle: "آموزشی نوین برای اندیشه‌ای ژرف",
-    heroSub: "دوره‌های منسجم، درس‌های چندرسانه‌ای، و یادگیری بدون مرز در حوزهٔ علوم انسانی.",
+    heroSub: "دوره‌های منسجم، درس‌های چندرسانه‌ای، و یادگیری بدون مرز در حوزهٔ علوم حوزوی.",
     start: "شروع یادگیری",
     login: "ورود",
     signup: "ثبت‌نام",
@@ -41,7 +41,7 @@ const dict = {
     title: "عنوان",
     courseDesc: "توضیح دوره",
     sortOrder: "ترتیب",
-    videoEmbed: "کد جاسازی ویدیو (یوتیوب / آپارات)",
+    videoEmbed: "کد جاسازی ویدیو",
     audioFile: "فایل صوتی",
     slideFile: "فایل اسلاید (PDF یا تصویر)",
     content: "متن درس (HTML پشتیبانی می‌شود)",
@@ -109,12 +109,38 @@ const dict = {
     notTeacher: "این بخش فقط برای استاد و مدیر است.",
     ownerOnly: "فقط درس‌های افزوده شده توسط شما قابل ویرایش/حذف است.",
     addedByYou: "افزوده شده توسط شما",
+    homepageEditor: "ویرایش صفحه اول",
+    siteSettings: "تنظیمات سایت",
+    hero: "هیرو",
+    heroBtnPrimary: "متن دکمه اصلی",
+    heroBtnSecondary: "متن دکمه دوم",
+    heroImage: "تصویر هیرو",
+    uploadImage: "آپلود تصویر",
+    removeImage: "حذف تصویر",
+    blocks: "بخش‌های صفحه",
+    addBlock: "افزودن بخش",
+    editBlock: "ویرایش بخش",
+    deleteBlock: "حذف بخش",
+    blockKind: "نوع بخش",
+    kindFeature: "کارت ویژگی",
+    kindCustom: "بخش دلخواه",
+    icon: "آیکن",
+    image: "تصویر",
+    visible: "نمایش",
+    hidden: "مخفی",
+    fieldFa: "فارسی",
+    fieldEn: "انگلیسی",
+    fieldAr: "عربی",
+    bodyText: "متن",
+    pendingApproval: "در انتظار تأیید",
+    setRole: "تغییر نقش",
+    allUsers: "همه کاربران",
   },
   en: {
-    appName: "Hikmat",
-    tagline: "Humanities Learning Platform",
+    appName: "Hawzatuna",
+    tagline: "Hawza Sciences Platform",
     heroTitle: "Modern Learning for Deeper Thinking",
-    heroSub: "Coherent courses, multimedia lessons, and limitless learning in the humanities.",
+    heroSub: "Coherent courses, multimedia lessons, and limitless learning.",
     start: "Start Learning",
     login: "Sign In",
     signup: "Sign Up",
@@ -148,7 +174,7 @@ const dict = {
     title: "Title",
     courseDesc: "Course Description",
     sortOrder: "Order",
-    videoEmbed: "Video Embed Code (YouTube / Aparat)",
+    videoEmbed: "Video Embed Code",
     audioFile: "Audio file",
     slideFile: "Slide file (PDF or Image)",
     content: "Lesson content (HTML supported)",
@@ -216,6 +242,165 @@ const dict = {
     notTeacher: "This section is only for teachers and admins.",
     ownerOnly: "You can only edit/delete lessons you added.",
     addedByYou: "Added by you",
+    homepageEditor: "Homepage Editor",
+    siteSettings: "Site Settings",
+    hero: "Hero",
+    heroBtnPrimary: "Primary button text",
+    heroBtnSecondary: "Secondary button text",
+    heroImage: "Hero image",
+    uploadImage: "Upload image",
+    removeImage: "Remove image",
+    blocks: "Page blocks",
+    addBlock: "Add block",
+    editBlock: "Edit block",
+    deleteBlock: "Delete block",
+    blockKind: "Block type",
+    kindFeature: "Feature card",
+    kindCustom: "Custom section",
+    icon: "Icon",
+    image: "Image",
+    visible: "Visible",
+    hidden: "Hidden",
+    fieldFa: "Persian",
+    fieldEn: "English",
+    fieldAr: "Arabic",
+    bodyText: "Body",
+    pendingApproval: "Pending approval",
+    setRole: "Change role",
+    allUsers: "All users",
+  },
+  ar: {
+    appName: "حوزتنا",
+    tagline: "منصة علوم الحوزة",
+    heroTitle: "تعليم حديث لفكر عميق",
+    heroSub: "دورات متكاملة ودروس متعددة الوسائط وتعلم بلا حدود في علوم الحوزة.",
+    start: "ابدأ التعلم",
+    login: "تسجيل الدخول",
+    signup: "إنشاء حساب",
+    logout: "خروج",
+    email: "البريد الإلكتروني",
+    password: "كلمة المرور",
+    fullName: "الاسم الكامل",
+    courses: "الدورات",
+    admin: "لوحة الإدارة",
+    dashboard: "اللوحة",
+    student: "طالب",
+    adminRole: "مدير",
+    noCourses: "لا توجد دورات بعد.",
+    noLessons: "لا توجد دروس في هذه الدورة.",
+    lessonsCount: "عدد الدروس",
+    lessons: "الدروس",
+    lesson: "درس",
+    description: "وصف الدرس",
+    video: "فيديو",
+    audio: "ملف صوتي",
+    slides: "شرائح",
+    downloadSlide: "تحميل الشريحة",
+    backToCourse: "الرجوع إلى الدورة",
+    backToCourses: "الرجوع إلى الدورات",
+    addCourse: "إضافة دورة",
+    addLesson: "إضافة درس",
+    editCourse: "تعديل الدورة",
+    editLesson: "تعديل الدرس",
+    deleteCourse: "حذف الدورة",
+    deleteLesson: "حذف الدرس",
+    title: "العنوان",
+    courseDesc: "وصف الدورة",
+    sortOrder: "الترتيب",
+    videoEmbed: "كود تضمين الفيديو",
+    audioFile: "ملف صوتي",
+    slideFile: "ملف الشريحة (PDF أو صورة)",
+    content: "محتوى الدرس (يدعم HTML)",
+    save: "حفظ",
+    cancel: "إلغاء",
+    manageLessons: "إدارة الدروس",
+    books: "الكتب",
+    book: "كتاب",
+    addBook: "إضافة كتاب",
+    editBook: "تعديل الكتاب",
+    deleteBook: "حذف الكتاب",
+    manageBooks: "إدارة الكتب",
+    bookDesc: "وصف الكتاب",
+    noBooks: "لا توجد كتب في هذه الدورة.",
+    backToBook: "الرجوع إلى الكتاب",
+    backToCourse2: "الرجوع إلى الدورة",
+    confirmDelete: "هل تريد الحذف فعلاً؟",
+    welcome: "أهلاً بك",
+    loading: "جارٍ التحميل…",
+    notAdmin: "هذا القسم للمديرين فقط.",
+    signupSuccess: "تم إنشاء الحساب. سجل الدخول الآن.",
+    confirmEmailMsg: "يرجى مراجعة بريدك للتأكيد.",
+    uploading: "جارٍ الرفع…",
+    noFile: "بدون ملف",
+    courseList: "كل الدورات",
+    feature1Title: "محتوى منظم",
+    feature1: "دورات مصنفة حسب المرحلة والمستوى.",
+    feature2Title: "وسائط متعددة",
+    feature2: "نص وفيديو وصوت وشرائح في صفحة واحدة.",
+    feature3Title: "وصول سهل",
+    feature3: "متوافق مع الجوال، تجربة سلسة.",
+    categories: "التصنيفات",
+    category: "تصنيف",
+    addCategory: "إضافة تصنيف",
+    editCategory: "تعديل التصنيف",
+    deleteCategory: "حذف التصنيف",
+    manageCategories: "إدارة التصنيفات",
+    uncategorized: "بدون تصنيف",
+    selectCategory: "اختر التصنيف",
+    originalText: "النص الأصلي",
+    translation: "الترجمة",
+    explanation: "الشرح",
+    teacher: "أستاذ",
+    teacherPanel: "لوحة الأستاذ",
+    managePanel: "لوحة الإدارة",
+    signupAs: "التسجيل بصفة",
+    studentRole: "طالب",
+    teacherRole: "أستاذ",
+    pendingTeacherMsg: "تم تسجيل طلبك كأستاذ، بانتظار موافقة المدير.",
+    manageUsers: "إدارة المستخدمين",
+    users: "المستخدمون",
+    pendingTeachers: "طلبات الأساتذة المعلقة",
+    approve: "موافقة كأستاذ",
+    revoke: "إلغاء صلاحية الأستاذ",
+    noUsers: "لا يوجد مستخدمون.",
+    courseAccess: "صلاحية الدورات",
+    bookAccess: "صلاحية الكتب",
+    grantCourseAccess: "منح صلاحية دورة",
+    grantBookAccess: "منح صلاحية كتاب",
+    assignAccess: "تعيين الصلاحيات",
+    noAccess: "لم تُمنح صلاحيات بعد.",
+    role: "الدور",
+    accessibleCourses: "الدورات المسموحة",
+    accessibleBooks: "الكتب المسموحة",
+    notTeacher: "هذا القسم للأساتذة والمديرين فقط.",
+    ownerOnly: "يمكنك تعديل/حذف الدروس التي أضفتها فقط.",
+    addedByYou: "أضفته أنت",
+    homepageEditor: "محرر الصفحة الأولى",
+    siteSettings: "إعدادات الموقع",
+    hero: "القسم الرئيسي",
+    heroBtnPrimary: "نص الزر الأساسي",
+    heroBtnSecondary: "نص الزر الثانوي",
+    heroImage: "صورة القسم الرئيسي",
+    uploadImage: "رفع صورة",
+    removeImage: "حذف الصورة",
+    blocks: "أقسام الصفحة",
+    addBlock: "إضافة قسم",
+    editBlock: "تعديل القسم",
+    deleteBlock: "حذف القسم",
+    blockKind: "نوع القسم",
+    kindFeature: "بطاقة ميزة",
+    kindCustom: "قسم مخصص",
+    icon: "أيقونة",
+    image: "صورة",
+    visible: "ظاهر",
+    hidden: "مخفي",
+    fieldFa: "الفارسية",
+    fieldEn: "الإنجليزية",
+    fieldAr: "العربية",
+    bodyText: "النص",
+    pendingApproval: "بانتظار الموافقة",
+    setRole: "تغيير الدور",
+    allUsers: "كل المستخدمين",
   },
 } as const;
 
@@ -227,6 +412,7 @@ interface I18nCtx {
   setLang: (l: Lang) => void;
   t: (k: Key) => string;
   dir: "rtl" | "ltr";
+  pick: (fa?: string | null, en?: string | null, ar?: string | null) => string;
 }
 
 const I18nContext = createContext<I18nCtx | null>(null);
@@ -236,7 +422,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = (typeof window !== "undefined" && (localStorage.getItem("lang") as Lang)) || "fa";
-    setLangState(stored);
+    if (stored === "fa" || stored === "en" || stored === "ar") setLangState(stored);
   }, []);
 
   const setLang = (l: Lang) => {
@@ -244,7 +430,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if (typeof window !== "undefined") localStorage.setItem("lang", l);
   };
 
-  const dir: "rtl" | "ltr" = lang === "fa" ? "rtl" : "ltr";
+  const dir: "rtl" | "ltr" = lang === "en" ? "ltr" : "rtl";
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -252,9 +438,15 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     document.documentElement.dir = dir;
   }, [lang, dir]);
 
-  const t = (k: Key) => dict[lang][k];
+  const t = (k: Key) => dict[lang][k] ?? dict.fa[k];
 
-  return <I18nContext.Provider value={{ lang, setLang, t, dir }}>{children}</I18nContext.Provider>;
+  const pick = (fa?: string | null, en?: string | null, ar?: string | null) => {
+    if (lang === "en") return en || fa || ar || "";
+    if (lang === "ar") return ar || fa || en || "";
+    return fa || ar || en || "";
+  };
+
+  return <I18nContext.Provider value={{ lang, setLang, t, dir, pick }}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n() {
