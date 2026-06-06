@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronLeft, BookOpen, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, BookOpen, Users, LayoutTemplate } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminPanel,
@@ -75,7 +75,12 @@ function AdminPanel() {
           <h1 className="text-3xl font-extrabold">{isAdmin ? t("managePanel") : t("teacherPanel")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("courses")}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {isAdmin && (
+            <Link to="/admin/homepage">
+              <Button variant="outline" className="gap-2"><LayoutTemplate className="h-4 w-4" />{t("homepageEditor")}</Button>
+            </Link>
+          )}
           {isAdmin && (
             <Link to="/admin/users">
               <Button variant="outline" className="gap-2"><Users className="h-4 w-4" />{t("manageUsers")}</Button>

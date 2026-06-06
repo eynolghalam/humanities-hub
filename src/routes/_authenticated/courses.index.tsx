@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { BookOpen, ChevronLeft } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/courses")({
+export const Route = createFileRoute("/_authenticated/courses/")({
   component: CoursesList,
 });
 

@@ -1,8 +1,20 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type Lang } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LogOut, Shield, Languages, GraduationCap } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const LANGS: { code: Lang; label: string }[] = [
+  { code: "fa", label: "فارسی" },
+  { code: "ar", label: "العربية" },
+  { code: "en", label: "English" },
+];
 
 export function Header() {
   const { t, lang, setLang } = useI18n();
@@ -34,23 +46,29 @@ export function Header() {
             <Link to="/admin">
               <Button variant="ghost" size="sm" className="gap-1.5">
                 {isAdmin ? <Shield className="h-4 w-4" /> : <GraduationCap className="h-4 w-4" />}
-                {isAdmin ? t("managePanel") : t("teacherPanel")}
+                <span className="hidden sm:inline">{isAdmin ? t("managePanel") : t("teacherPanel")}</span>
               </Button>
             </Link>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLang(lang === "fa" ? "en" : "fa")}
-            className="gap-1.5"
-          >
-            <Languages className="h-4 w-4" />
-            {lang === "fa" ? "EN" : "FA"}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <Languages className="h-4 w-4" />
+                <span className="text-xs uppercase">{lang}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {LANGS.map(l => (
+                <DropdownMenuItem key={l.code} onClick={() => setLang(l.code)}>
+                  {l.label}{lang === l.code ? " ✓" : ""}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           {user ? (
             <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-1.5">
               <LogOut className="h-4 w-4" />
-              {t("logout")}
+              <span className="hidden sm:inline">{t("logout")}</span>
             </Button>
           ) : (
             <Link to="/auth">
