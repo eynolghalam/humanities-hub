@@ -75,7 +75,12 @@ function AdminPanel() {
           <h1 className="text-3xl font-extrabold">{isAdmin ? t("managePanel") : t("teacherPanel")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("courses")}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {isAdmin && (
+            <Link to="/admin/homepage">
+              <Button variant="outline" className="gap-2"><LayoutTemplate className="h-4 w-4" />{t("homepageEditor")}</Button>
+            </Link>
+          )}
           {isAdmin && (
             <Link to="/admin/users">
               <Button variant="outline" className="gap-2"><Users className="h-4 w-4" />{t("manageUsers")}</Button>
