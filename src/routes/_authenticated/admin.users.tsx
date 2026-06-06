@@ -61,12 +61,11 @@ function UsersPage() {
   const others = (data ?? []).filter(u => !pending.includes(u));
 
   const changeRole = async (userId: string, newRole: Role) => {
-    // remove existing student/teacher rows (not admin) and insert new
-    await supabase.from("user_roles").delete().eq("user_id", userId).in("role", ["student", "teacher"]);
-    if (newRole !== "admin") {
-      await supabase.from("user_roles").insert({ user_id: userId, role: newRole });
-    } else {
-      await supabase.from("user_roles").insert({ user_id: userId, role: "admin" });
+    await supabase.from("user_roles").delete().eq("user_id", userId);
+    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole });
+    if (error) { toast.error(error.message); return; }
+    if (newRole !== "teacher") {
+      await supabase.from("profiles").update({ pending_teacher: false }).eq("id", userId);
     }
     if (newRole === "teacher") {
       await supabase.from("profiles").update({ pending_teacher: false }).eq("id", userId);
