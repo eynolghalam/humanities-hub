@@ -116,6 +116,57 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_blocks: {
+        Row: {
+          body_ar: string | null
+          body_en: string | null
+          body_fa: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          image_url: string | null
+          kind: string
+          sort_order: number
+          title_ar: string | null
+          title_en: string | null
+          title_fa: string | null
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          body_ar?: string | null
+          body_en?: string | null
+          body_fa?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          kind?: string
+          sort_order?: number
+          title_ar?: string | null
+          title_en?: string | null
+          title_fa?: string | null
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          body_ar?: string | null
+          body_en?: string | null
+          body_fa?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          kind?: string
+          sort_order?: number
+          title_ar?: string | null
+          title_en?: string | null
+          title_fa?: string | null
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
       lessons: {
         Row: {
           audio_url: string | null
@@ -206,6 +257,33 @@ export type Database = {
           id?: string
           pending_teacher?: boolean
           updated_at?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          created_at: string
+          key: string
+          updated_at: string
+          value_ar: string | null
+          value_en: string | null
+          value_fa: string | null
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          updated_at?: string
+          value_ar?: string | null
+          value_en?: string | null
+          value_fa?: string | null
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          updated_at?: string
+          value_ar?: string | null
+          value_en?: string | null
+          value_fa?: string | null
         }
         Relationships: []
       }
