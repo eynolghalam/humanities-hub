@@ -77,7 +77,7 @@ function LessonView() {
 
       {lesson.content && (
         <Section icon={FileText} title={t("description")}>
-          <div className="rich-content text-foreground" dangerouslySetInnerHTML={{ __html: lesson.content }} />
+          <div className="rich-content text-foreground" dangerouslySetInnerHTML={{ __html: sanitizeContent(lesson.content) }} />
         </Section>
       )}
 
@@ -85,7 +85,7 @@ function LessonView() {
         <Section icon={Video} title={t("video")}>
           <div
             className="aspect-video overflow-hidden rounded-xl [&_iframe]:h-full [&_iframe]:w-full"
-            dangerouslySetInnerHTML={{ __html: lesson.video_embed }}
+            dangerouslySetInnerHTML={{ __html: sanitizeEmbed(lesson.video_embed) }}
           />
         </Section>
       )}
