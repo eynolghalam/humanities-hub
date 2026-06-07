@@ -1,10 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, FileText, Video, Music, Download, BookOpen, Languages, Lightbulb } from "lucide-react";
+
+const sanitizeContent = (html: string) => DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+const sanitizeEmbed = (html: string) =>
+  DOMPurify.sanitize(html, {
+    ADD_TAGS: ["iframe"],
+    ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "src", "title", "width", "height", "referrerpolicy", "loading"],
+  });
 
 export const Route = createFileRoute("/_authenticated/lessons/$lessonId")({
   component: LessonView,
@@ -69,7 +77,7 @@ function LessonView() {
 
       {lesson.content && (
         <Section icon={FileText} title={t("description")}>
-          <div className="rich-content text-foreground" dangerouslySetInnerHTML={{ __html: lesson.content }} />
+          <div className="rich-content text-foreground" dangerouslySetInnerHTML={{ __html: sanitizeContent(lesson.content) }} />
         </Section>
       )}
 
@@ -77,7 +85,7 @@ function LessonView() {
         <Section icon={Video} title={t("video")}>
           <div
             className="aspect-video overflow-hidden rounded-xl [&_iframe]:h-full [&_iframe]:w-full"
-            dangerouslySetInnerHTML={{ __html: lesson.video_embed }}
+            dangerouslySetInnerHTML={{ __html: sanitizeEmbed(lesson.video_embed) }}
           />
         </Section>
       )}
