@@ -1,16 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { splitBookIntoLessons } from "@/lib/book-import.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/books/$bookId")({
   component: ManageLessons,
@@ -75,9 +77,14 @@ function ManageLessons() {
           <p className="mt-1 text-sm text-muted-foreground">{t("manageLessons")}</p>
         </div>
         {courseId && (
-          <LessonDialog bookId={bookId} courseId={courseId} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
-            <Button className="bg-hero text-primary-foreground gap-2"><Plus className="h-4 w-4" />{t("addLesson")}</Button>
-          </LessonDialog>
+          <div className="flex items-center gap-2">
+            <ImportFromTextDialog bookId={bookId} courseId={courseId} existingCount={lessons?.length ?? 0} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
+              <Button variant="outline" className="gap-2"><Sparkles className="h-4 w-4" />{t("importFromText")}</Button>
+            </ImportFromTextDialog>
+            <LessonDialog bookId={bookId} courseId={courseId} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
+              <Button className="bg-hero text-primary-foreground gap-2"><Plus className="h-4 w-4" />{t("addLesson")}</Button>
+            </LessonDialog>
+          </div>
         )}
       </div>
 
@@ -185,6 +192,107 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
           <div className="space-y-2"><Label>{t("sortOrder")}</Label><Input type="number" value={sortOrder} onChange={e => setSortOrder(Number(e.target.value))} dir="ltr" /></div>
           <Button type="submit" disabled={saving} className="w-full bg-hero text-primary-foreground">{saving ? t("uploading") : t("save")}</Button>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface DraftLesson { title: string; original_text: string; translation: string; explanation: string }
+
+function ImportFromTextDialog({ bookId, courseId, existingCount, children, onSaved }: { bookId: string; courseId: string; existingCount: number; children: React.ReactNode; onSaved: () => void }) {
+  const { user } = useAuth();
+  const { t } = useI18n();
+  const splitFn = useServerFn(splitBookIntoLessons);
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [drafts, setDrafts] = useState<DraftLesson[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [importing, setImporting] = useState(false);
+
+  const analyze = async () => {
+    setAnalyzing(true);
+    try {
+      const res = await splitFn({ data: { text } });
+      if (!res.lessons.length) { toast.error(t("nothingExtracted")); return; }
+      setDrafts(res.lessons);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error");
+    } finally { setAnalyzing(false); }
+  };
+
+  const importAll = async () => {
+    setImporting(true);
+    try {
+      const rows = drafts.map((d, i) => ({
+        course_id: courseId,
+        book_id: bookId,
+        title: d.title,
+        original_text: d.original_text,
+        translation: d.translation,
+        explanation: d.explanation,
+        sort_order: existingCount + i,
+        created_by: user?.id,
+      }));
+      const { error } = await supabase.from("lessons").insert(rows);
+      if (error) throw error;
+      toast.success(`${drafts.length} ${t("importedCount")}`);
+      onSaved();
+      setOpen(false);
+      setDrafts([]); setText("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error");
+    } finally { setImporting(false); }
+  };
+
+  const updateDraft = (i: number, patch: Partial<DraftLesson>) => {
+    setDrafts(prev => prev.map((d, idx) => idx === i ? { ...d, ...patch } : d));
+  };
+  const removeDraft = (i: number) => setDrafts(prev => prev.filter((_, idx) => idx !== i));
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader><DialogTitle>{t("importFromText")}</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">{t("importBookHelp")}</p>
+          {drafts.length === 0 ? (
+            <>
+              <div className="space-y-2">
+                <Label>{t("bookFullText")}</Label>
+                <Textarea rows={14} value={text} onChange={e => setText(e.target.value)} placeholder="..." />
+              </div>
+              <Button onClick={analyze} disabled={analyzing || text.trim().length < 20} className="w-full bg-hero text-primary-foreground gap-2">
+                <Sparkles className="h-4 w-4" />
+                {analyzing ? t("analyzing") : t("importFromText")}
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold">{t("previewLessons")} ({drafts.length})</h3>
+                <Button variant="ghost" size="sm" onClick={() => setDrafts([])}>{t("cancel")}</Button>
+              </div>
+              <div className="space-y-3">
+                {drafts.map((d, i) => (
+                  <div key={i} className="rounded-xl border border-border bg-card p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-xs font-bold text-primary">{i + 1}</span>
+                      <Input value={d.title} onChange={e => updateDraft(i, { title: e.target.value })} className="flex-1" />
+                      <Button size="icon" variant="ghost" onClick={() => removeDraft(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                    <Textarea rows={3} placeholder={t("originalText")} value={d.original_text} onChange={e => updateDraft(i, { original_text: e.target.value })} />
+                    <Textarea rows={2} placeholder={t("translation")} value={d.translation} onChange={e => updateDraft(i, { translation: e.target.value })} />
+                    <Textarea rows={2} placeholder={t("explanation")} value={d.explanation} onChange={e => updateDraft(i, { explanation: e.target.value })} />
+                  </div>
+                ))}
+              </div>
+              <Button onClick={importAll} disabled={importing} className="w-full bg-hero text-primary-foreground">
+                {importing ? t("uploading") : `${t("importAll")} (${drafts.length})`}
+              </Button>
+            </>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
