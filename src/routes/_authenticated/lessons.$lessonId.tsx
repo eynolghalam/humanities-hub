@@ -107,6 +107,11 @@ function LessonView() {
           </a>
         </Section>
       )}
+
+      <ExerciseSection lessonId={lesson.id} />
+    </div>
+  );
+}
     </div>
   );
 }
