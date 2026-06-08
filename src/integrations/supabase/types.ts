@@ -167,6 +167,48 @@ export type Database = {
         }
         Relationships: []
       }
+      lesson_exercises: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          exercise_type: string
+          expected_answer: string
+          id: string
+          lesson_id: string
+          options: Json | null
+          question: string
+          sort_order: number
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          exercise_type?: string
+          expected_answer?: string
+          id?: string
+          lesson_id: string
+          options?: Json | null
+          question: string
+          sort_order?: number
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          exercise_type?: string
+          expected_answer?: string
+          id?: string
+          lesson_id?: string
+          options?: Json | null
+          question?: string
+          sort_order?: number
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lessons: {
         Row: {
           audio_url: string | null
@@ -345,6 +387,99 @@ export type Database = {
           },
         ]
       }
+      user_achievements: {
+        Row: {
+          badge_key: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_key: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_key?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_exercise_attempts: {
+        Row: {
+          ai_feedback: string | null
+          correct_answer: string | null
+          created_at: string
+          exercise_id: string
+          id: string
+          is_correct: boolean
+          score: number
+          user_answer: string
+          user_id: string
+          xp_awarded: number
+        }
+        Insert: {
+          ai_feedback?: string | null
+          correct_answer?: string | null
+          created_at?: string
+          exercise_id: string
+          id?: string
+          is_correct?: boolean
+          score?: number
+          user_answer: string
+          user_id: string
+          xp_awarded?: number
+        }
+        Update: {
+          ai_feedback?: string | null
+          correct_answer?: string | null
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          is_correct?: boolean
+          score?: number
+          user_answer?: string
+          user_id?: string
+          xp_awarded?: number
+        }
+        Relationships: []
+      }
+      user_lesson_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          lesson_id: string
+          status: string
+          updated_at: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          lesson_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -363,6 +498,51 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          created_at: string
+          current_streak: number
+          hearts: number
+          hearts_refill_at: string | null
+          last_activity_date: string | null
+          league: string
+          longest_streak: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+          weekly_reset_at: string
+          weekly_xp: number
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          hearts?: number
+          hearts_refill_at?: string | null
+          last_activity_date?: string | null
+          league?: string
+          longest_streak?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+          weekly_reset_at?: string
+          weekly_xp?: number
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          hearts?: number
+          hearts_refill_at?: string | null
+          last_activity_date?: string | null
+          league?: string
+          longest_streak?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+          weekly_reset_at?: string
+          weekly_xp?: number
         }
         Relationships: []
       }
