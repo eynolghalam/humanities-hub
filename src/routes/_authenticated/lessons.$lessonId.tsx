@@ -112,9 +112,6 @@ function LessonView() {
     </div>
   );
 }
-    </div>
-  );
-}
 
 function Section({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
   return (
