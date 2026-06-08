@@ -261,7 +261,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
   });
 
 async function tryAwardBadges(
-  supabase: { from: (t: string) => { insert: (v: unknown) => Promise<unknown> } },
+  supabase: ReturnType<typeof getSupabase>,
   userId: string,
   ctx: { totalXP: number; streak: number; lessonCompleted: boolean },
 ) {
@@ -273,9 +273,12 @@ async function tryAwardBadges(
   if (ctx.totalXP >= 1000) badges.push("xp_1000");
   if (ctx.totalXP >= 5000) badges.push("xp_5000");
   for (const b of badges) {
-    await supabase.from("user_achievements").insert({ user_id: userId, badge_key: b }).catch(() => {});
+    await supabase.from("user_achievements").insert({ user_id: userId, badge_key: b }).then(() => {}, () => {});
   }
 }
+// helper to grab supabase type from context
+type Ctx = { supabase: unknown };
+function getSupabase(c: Ctx) { return c.supabase as never; }
 
 /* --------------------- Get user stats --------------------- */
 export const getUserStats = createServerFn({ method: "GET" })
