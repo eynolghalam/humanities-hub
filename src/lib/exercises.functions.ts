@@ -255,30 +255,19 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     }
 
     // Achievements
-    await tryAwardBadges(supabase, userId, { totalXP: newTotalXP, streak: newStreak, lessonCompleted });
+    const badges: string[] = [];
+    if (lessonCompleted) badges.push("first_lesson");
+    if (newStreak >= 7) badges.push("streak_7");
+    if (newStreak >= 30) badges.push("streak_30");
+    if (newTotalXP >= 100) badges.push("xp_100");
+    if (newTotalXP >= 1000) badges.push("xp_1000");
+    if (newTotalXP >= 5000) badges.push("xp_5000");
+    for (const b of badges) {
+      await supabase.from("user_achievements").insert({ user_id: userId, badge_key: b }).then(() => {}, () => {});
+    }
 
     return { ...grade, xp_awarded: xp, lesson_completed: lessonCompleted, hearts: newHearts, streak: newStreak, total_xp: newTotalXP };
   });
-
-async function tryAwardBadges(
-  supabase: ReturnType<typeof getSupabase>,
-  userId: string,
-  ctx: { totalXP: number; streak: number; lessonCompleted: boolean },
-) {
-  const badges: string[] = [];
-  if (ctx.lessonCompleted) badges.push("first_lesson");
-  if (ctx.streak >= 7) badges.push("streak_7");
-  if (ctx.streak >= 30) badges.push("streak_30");
-  if (ctx.totalXP >= 100) badges.push("xp_100");
-  if (ctx.totalXP >= 1000) badges.push("xp_1000");
-  if (ctx.totalXP >= 5000) badges.push("xp_5000");
-  for (const b of badges) {
-    await supabase.from("user_achievements").insert({ user_id: userId, badge_key: b }).then(() => {}, () => {});
-  }
-}
-// helper to grab supabase type from context
-type Ctx = { supabase: unknown };
-function getSupabase(c: Ctx) { return c.supabase as never; }
 
 /* --------------------- Get user stats --------------------- */
 export const getUserStats = createServerFn({ method: "GET" })
