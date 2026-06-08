@@ -177,6 +177,7 @@ const dict = {
     badge_xp_100: "۱۰۰ امتیاز",
     badge_xp_1000: "۱۰۰۰ امتیاز",
     badge_xp_5000: "۵۰۰۰ امتیاز",
+  },
   en: {
     appName: "Hawzatuna",
     tagline: "Hawza Sciences Platform",
