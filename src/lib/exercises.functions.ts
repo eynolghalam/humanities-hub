@@ -95,7 +95,7 @@ export const extractOrGenerateExercises = createServerFn({ method: "POST" })
       question: e.question,
       expected_answer: e.expected_answer,
       exercise_type: e.exercise_type,
-      options: e.options ? (e.options as unknown as object) : null,
+      options: (e.options ?? null) as unknown as never,
       source: e.source,
       sort_order: i,
       created_by: context.userId,
