@@ -94,6 +94,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          library_url: string | null
           sort_order: number
           title: string
           updated_at: string
@@ -102,6 +103,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          library_url?: string | null
           sort_order?: number
           title: string
           updated_at?: string
@@ -110,6 +112,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          library_url?: string | null
           sort_order?: number
           title?: string
           updated_at?: string

@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
-import { ChevronLeft, BookOpen, Tag } from "lucide-react";
+import { ChevronLeft, BookOpen, Tag, Library } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CourseProgressBar } from "@/components/ProgressInline";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   component: CourseDetail,
@@ -74,6 +75,26 @@ function CourseDetail() {
           <h1 className="text-3xl font-extrabold">{data.course.title}</h1>
           {data.course.description && <p className="mt-3 text-muted-foreground">{data.course.description}</p>}
           <CourseProgressBar courseId={courseId} />
+          {data.course.library_url && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="mt-4 gap-2 bg-hero text-primary-foreground">
+                  <Library className="h-4 w-4" />
+                  {t("libraryButton")}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl h-[85vh] p-0 overflow-hidden flex flex-col">
+                <DialogHeader className="px-6 py-3 border-b">
+                  <DialogTitle>{t("libraryDialogTitle")} — {data.course.title}</DialogTitle>
+                </DialogHeader>
+                <iframe
+                  src={data.course.library_url}
+                  className="w-full flex-1 border-0"
+                  title={data.course.title}
+                />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       )}
 
