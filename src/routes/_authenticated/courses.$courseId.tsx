@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { ChevronLeft, BookOpen, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CourseProgressBar } from "@/components/ProgressInline";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   component: CourseDetail,
@@ -72,6 +73,7 @@ function CourseDetail() {
         <div className="bg-card-soft mb-8 rounded-2xl border border-border p-8 shadow-soft">
           <h1 className="text-3xl font-extrabold">{data.course.title}</h1>
           {data.course.description && <p className="mt-3 text-muted-foreground">{data.course.description}</p>}
+          <CourseProgressBar courseId={courseId} />
         </div>
       )}
 

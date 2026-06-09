@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { ChevronLeft, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BookProgressBar } from "@/components/ProgressInline";
 
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
   component: BookDetail,
@@ -43,6 +44,7 @@ function BookDetail() {
         <div className="bg-card-soft mb-8 rounded-2xl border border-border p-8 shadow-soft">
           <h1 className="text-3xl font-extrabold">{data.book.title}</h1>
           {data.book.description && <p className="mt-3 text-muted-foreground">{data.book.description}</p>}
+          <BookProgressBar bookId={bookId} />
         </div>
       )}
 
