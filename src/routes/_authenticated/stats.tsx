@@ -33,7 +33,7 @@ function StatsPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={<Zap className="h-6 w-6 text-amber-500" />} label={t("xp")} value={s?.total_xp ?? 0} />
-        <StatCard icon={<Flame className="h-6 w-6 text-orange-500" />} label={t("streak")} value={s?.current_streak ?? 0} sub={`${t("longest")}: ${s?.longest_streak ?? 0}`} />
+        <StatCard icon={<Flame className="h-6 w-6 text-orange-500" />} label={t("streak")} value={s?.current_streak ?? 0} sub={`max ${s?.longest_streak ?? 0}`} />
         <StatCard icon={<Heart className="h-6 w-6 text-rose-500" />} label={t("hearts")} value={s?.hearts ?? 0} />
         <StatCard icon={<Trophy className="h-6 w-6 text-purple-500" />} label={t("league")} value={leagueLabel} sub={`${t("weeklyXP")}: ${s?.weekly_xp ?? 0}`} />
       </div>
