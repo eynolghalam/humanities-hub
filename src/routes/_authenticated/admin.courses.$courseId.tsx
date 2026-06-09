@@ -285,3 +285,29 @@ function CategoryDialog({ courseId, category, children, onSaved }: { courseId: s
     </Dialog>
   );
 }
+
+function LibraryUrlForm({ courseId, initial, onSaved }: { courseId: string; initial: string; onSaved: () => void }) {
+  const { t } = useI18n();
+  const [url, setUrl] = useState(initial);
+  const [saving, setSaving] = useState(false);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    const { error } = await supabase.from("courses").update({ library_url: url || null }).eq("id", courseId);
+    setSaving(false);
+    if (error) toast.error(error.message);
+    else { toast.success("OK"); onSaved(); }
+  };
+
+  return (
+    <form onSubmit={save} className="mb-6 rounded-2xl border border-border bg-card-soft p-4 space-y-2">
+      <Label className="text-sm font-bold">{t("libraryUrl")}</Label>
+      <p className="text-xs text-muted-foreground">{t("libraryUrlHelp")}</p>
+      <div className="flex gap-2">
+        <Input dir="ltr" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://www.ghbook.ir/read/fa-IR/796" />
+        <Button type="submit" disabled={saving}>{t("save")}</Button>
+      </div>
+    </form>
+  );
+}
