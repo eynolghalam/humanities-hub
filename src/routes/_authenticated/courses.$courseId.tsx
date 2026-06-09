@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
-import { ChevronLeft, BookOpen, Tag } from "lucide-react";
+import { ChevronLeft, BookOpen, Tag, Library } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CourseProgressBar } from "@/components/ProgressInline";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   component: CourseDetail,
