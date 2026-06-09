@@ -2,7 +2,8 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Shield, Languages, GraduationCap } from "lucide-react";
+import { BookOpen, LogOut, Shield, Languages, GraduationCap, Map, BarChart3 } from "lucide-react";
+import { StatsBar } from "@/components/StatsBar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,9 +38,26 @@ export function Header() {
         </Link>
 
         <nav className="flex items-center gap-2">
+          {user && <StatsBar />}
           {user && (
             <Link to="/courses">
               <Button variant="ghost" size="sm">{t("courses")}</Button>
+            </Link>
+          )}
+          {user && (
+            <Link to="/journey">
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <Map className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("journey")}</span>
+              </Button>
+            </Link>
+          )}
+          {user && (
+            <Link to="/stats">
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("stats")}</span>
+              </Button>
             </Link>
           )}
           {(isAdmin || isTeacher) && (
