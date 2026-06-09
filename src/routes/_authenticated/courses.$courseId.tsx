@@ -75,6 +75,26 @@ function CourseDetail() {
           <h1 className="text-3xl font-extrabold">{data.course.title}</h1>
           {data.course.description && <p className="mt-3 text-muted-foreground">{data.course.description}</p>}
           <CourseProgressBar courseId={courseId} />
+          {data.course.library_url && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="mt-4 gap-2 bg-hero text-primary-foreground">
+                  <Library className="h-4 w-4" />
+                  {t("libraryButton")}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl h-[85vh] p-0 overflow-hidden flex flex-col">
+                <DialogHeader className="px-6 py-3 border-b">
+                  <DialogTitle>{t("libraryDialogTitle")} — {data.course.title}</DialogTitle>
+                </DialogHeader>
+                <iframe
+                  src={data.course.library_url}
+                  className="w-full flex-1 border-0"
+                  title={data.course.title}
+                />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       )}
 
