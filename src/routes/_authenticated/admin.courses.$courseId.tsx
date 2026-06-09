@@ -154,6 +154,10 @@ function ManageBooks() {
         </div>
       </div>
 
+      {canEditAll && course && (
+        <LibraryUrlForm courseId={courseId} initial={course.library_url ?? ""} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-course", courseId] })} />
+      )}
+
       {(categories?.length ?? 0) > 0 && (
         <div className="mb-6 rounded-2xl border border-border bg-card-soft p-4">
           <h2 className="mb-3 text-sm font-bold text-muted-foreground">{t("manageCategories")}</h2>
