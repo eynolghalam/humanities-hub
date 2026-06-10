@@ -381,6 +381,69 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
     finally { setLoading(false); setProgress(null); }
   };
 
+  const loadBookPages = async () => {
+    setLoading(true);
+    try {
+      const collected: typeof bookPages = [];
+      let nextUrl: string | null = bookStartUrl.trim();
+      let title = "";
+      const cap = Math.min(bookMaxPages, 500);
+      while (nextUrl && collected.length < cap) {
+        const remaining = cap - collected.length;
+        const res: { bookTitle: string; pages: typeof bookPages; nextUrl: string | null } =
+          await fetchBookPagesFn({ data: { startUrl: nextUrl, limit: Math.min(remaining, 15) } });
+        if (!title) title = res.bookTitle;
+        collected.push(...res.pages);
+        setProgress({ done: collected.length, total: cap });
+        if (!res.nextUrl || res.pages.length === 0) { nextUrl = null; break; }
+        nextUrl = res.nextUrl;
+      }
+      setBookFetchedTitle(title);
+      setBookPages(collected);
+      if (!bookLessonTitle && title) setBookLessonTitle(title);
+      if (!collected.length) toast.error("صفحه‌ای استخراج نشد");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Error"); }
+    finally { setLoading(false); setProgress(null); }
+  };
+
+  const saveBookPages = async () => {
+    if (!bookPages.length) return;
+    setLoading(true);
+    try {
+      const { count } = await supabase.from("lessons").select("id", { count: "exact", head: true }).eq("book_id", bookId);
+      const base = count ?? 0;
+      if (bookSaveMode === "combined") {
+        const combinedHtml = bookPages
+          .filter(p => p.html)
+          .map(p => `<section class="dg-page" data-page="${p.pageNum}"><div class="dg-pagenum">صفحه ${p.pageNum}</div>${p.html}</section>`)
+          .join("\n");
+        const { error } = await supabase.from("lessons").insert({
+          course_id: courseId, book_id: bookId,
+          title: bookLessonTitle.trim() || bookFetchedTitle || "متن کتاب",
+          original_text: combinedHtml,
+          sort_order: base,
+        });
+        if (error) throw error;
+        toast.success(`${bookPages.length} صفحه به‌صورت یک درس اضافه شد`);
+      } else {
+        const rows = bookPages.filter(p => p.html).map((p, i) => ({
+          course_id: courseId, book_id: bookId,
+          title: `${bookLessonTitle.trim() || bookFetchedTitle || "صفحه"} — صفحه ${p.pageNum}`,
+          original_text: p.html,
+          sort_order: base + i,
+        }));
+        if (rows.length) {
+          const { error } = await supabase.from("lessons").insert(rows);
+          if (error) throw error;
+        }
+        toast.success(`${rows.length} درس اضافه شد`);
+      }
+      onSaved(); setOpen(false); reset(); setBookStartUrl(""); setBookLessonTitle("");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Error"); }
+    finally { setLoading(false); }
+  };
+
+
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { reset(); } }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
