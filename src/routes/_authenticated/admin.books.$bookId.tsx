@@ -82,6 +82,9 @@ function ManageLessons() {
             <ImportFromTextDialog bookId={bookId} courseId={courseId} existingCount={lessons?.length ?? 0} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
               <Button variant="outline" className="gap-2"><Sparkles className="h-4 w-4" />{t("importFromText")}</Button>
             </ImportFromTextDialog>
+            <ImportFromDarsgoftarDialog bookId={bookId} courseId={courseId} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
+              <Button variant="outline" className="gap-2"><BookDown className="h-4 w-4" />درس‌گفتار</Button>
+            </ImportFromDarsgoftarDialog>
             <LessonDialog bookId={bookId} courseId={courseId} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
               <Button className="bg-hero text-primary-foreground gap-2"><Plus className="h-4 w-4" />{t("addLesson")}</Button>
             </LessonDialog>
