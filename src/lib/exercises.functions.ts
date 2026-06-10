@@ -194,17 +194,20 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     // XP
     const xp = grade.is_correct ? (grade.score >= 90 ? 15 : 10) : 0;
 
-    // Record attempt
-    await supabase.from("user_exercise_attempts").insert({
-      user_id: userId,
-      exercise_id: ex.id,
-      user_answer: data.userAnswer,
-      is_correct: grade.is_correct,
-      score: Math.round(grade.score),
-      ai_feedback: grade.feedback,
-      correct_answer: grade.correct_answer,
-      xp_awarded: xp,
-    });
+    // Record attempt via service role to prevent client-side XP/score forgery
+    {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.from("user_exercise_attempts").insert({
+        user_id: userId,
+        exercise_id: ex.id,
+        user_answer: data.userAnswer,
+        is_correct: grade.is_correct,
+        score: Math.round(grade.score),
+        ai_feedback: grade.feedback,
+        correct_answer: grade.correct_answer,
+        xp_awarded: xp,
+      });
+    }
 
     // Update stats: streak, hearts, xp, league
     const today = todayStr();
