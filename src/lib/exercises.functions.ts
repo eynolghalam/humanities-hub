@@ -239,11 +239,12 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     }
 
     if (lessonCompleted) {
-      const { data: prog } = await supabase
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: prog } = await supabaseAdmin
         .from("user_lesson_progress").select("*").eq("user_id", userId).eq("lesson_id", ex.lesson_id).maybeSingle();
       if (!prog || prog.status !== "completed") {
         const bonusXP = 20;
-        await supabase.from("user_lesson_progress").upsert({
+        await supabaseAdmin.from("user_lesson_progress").upsert({
           user_id: userId,
           lesson_id: ex.lesson_id,
           status: "completed",
