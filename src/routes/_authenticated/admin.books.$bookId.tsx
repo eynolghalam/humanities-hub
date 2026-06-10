@@ -450,10 +450,12 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader><DialogTitle>وارد کردن توضیح درس از درس‌گفتار</DialogTitle></DialogHeader>
         <div className="space-y-4">
-          <div className="flex gap-2 text-sm">
-            <Button type="button" size="sm" variant={mode === "single" ? "default" : "outline"} onClick={() => { setMode("single"); reset(); }}>یک جلسه</Button>
-            <Button type="button" size="sm" variant={mode === "bulk" ? "default" : "outline"} onClick={() => { setMode("bulk"); reset(); }}>کل کتاب</Button>
+          <div className="flex flex-wrap gap-2 text-sm">
+            <Button type="button" size="sm" variant={mode === "single" ? "default" : "outline"} onClick={() => { setMode("single"); reset(); }}>یک جلسه (توضیح استاد)</Button>
+            <Button type="button" size="sm" variant={mode === "bulk" ? "default" : "outline"} onClick={() => { setMode("bulk"); reset(); }}>کل توضیحات کتاب</Button>
+            <Button type="button" size="sm" variant={mode === "booktext" ? "default" : "outline"} onClick={() => { setMode("booktext"); reset(); }}>متن کتاب</Button>
           </div>
+
 
           {mode === "single" && (
             <>
