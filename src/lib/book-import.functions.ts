@@ -16,7 +16,14 @@ export const splitBookIntoLessons = createServerFn({ method: "POST" })
       text: z.string().min(20).max(200_000),
     }),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    // Role check: only admin/teacher may consume AI credits to import books
+    const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const roles = (roleRows ?? []).map(r => r.role as string);
+    if (!roles.includes("admin") && !roles.includes("teacher")) {
+      throw new Error("Unauthorized: only admin or teacher can import books.");
+    }
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
 
