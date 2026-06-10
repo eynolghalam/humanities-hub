@@ -26,7 +26,13 @@ export const extractOrGenerateExercises = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ lessonId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    // Role check: only admin/teacher may consume AI credits to generate exercises
+    const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const roles = (roleRows ?? []).map(r => r.role as string);
+    if (!roles.includes("admin") && !roles.includes("teacher")) {
+      throw new Error("دسترسی غیرمجاز: فقط مدیر یا استاد می‌تواند تمرین تولید کند.");
+    }
     const { data: lesson, error: lerr } = await supabase
       .from("lessons")
       .select("id,title,original_text,translation,explanation,content")
