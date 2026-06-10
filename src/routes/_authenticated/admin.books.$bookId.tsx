@@ -6,13 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { splitBookIntoLessons } from "@/lib/book-import.functions";
+import { fetchDarsgoftarSession, listDarsgoftarSessions, importDarsgoftarBook } from "@/lib/darsgoftar.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronLeft, Sparkles } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, Sparkles, BookDown, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/books/$bookId")({
   component: ManageLessons,
@@ -81,6 +82,9 @@ function ManageLessons() {
             <ImportFromTextDialog bookId={bookId} courseId={courseId} existingCount={lessons?.length ?? 0} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
               <Button variant="outline" className="gap-2"><Sparkles className="h-4 w-4" />{t("importFromText")}</Button>
             </ImportFromTextDialog>
+            <ImportFromDarsgoftarDialog bookId={bookId} courseId={courseId} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
+              <Button variant="outline" className="gap-2"><BookDown className="h-4 w-4" />درس‌گفتار</Button>
+            </ImportFromDarsgoftarDialog>
             <LessonDialog bookId={bookId} courseId={courseId} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
               <Button className="bg-hero text-primary-foreground gap-2"><Plus className="h-4 w-4" />{t("addLesson")}</Button>
             </LessonDialog>
@@ -297,3 +301,150 @@ function ImportFromTextDialog({ bookId, courseId, existingCount, children, onSav
     </Dialog>
   );
 }
+
+interface DgSession { url: string; number: string; title: string }
+
+function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { bookId: string; courseId: string; children: React.ReactNode; onSaved: () => void }) {
+  const fetchSessionFn = useServerFn(fetchDarsgoftarSession);
+  const listFn = useServerFn(listDarsgoftarSessions);
+  const importFn = useServerFn(importDarsgoftarBook);
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"single" | "bulk">("single");
+  const [url, setUrl] = useState("");
+  const [mbookId, setMbookId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<{ sessionTitle: string; combinedHtml: string; boxesCount: number } | null>(null);
+  const [sessions, setSessions] = useState<DgSession[]>([]);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+
+  const reset = () => { setPreview(null); setSessions(null as never); setSessions([]); setProgress(null); };
+
+  const loadSingle = async () => {
+    setLoading(true);
+    try {
+      const res = await fetchSessionFn({ data: { url: url.trim() } });
+      setPreview({ sessionTitle: res.sessionTitle, combinedHtml: res.combinedHtml, boxesCount: res.boxes.length });
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Error"); }
+    finally { setLoading(false); }
+  };
+
+  const saveSingle = async () => {
+    if (!preview) return;
+    setLoading(true);
+    try {
+      const { count } = await supabase.from("lessons").select("id", { count: "exact", head: true }).eq("book_id", bookId);
+      const { error } = await supabase.from("lessons").insert({
+        course_id: courseId, book_id: bookId, title: preview.sessionTitle || "جلسه جدید",
+        explanation: preview.combinedHtml, sort_order: count ?? 0,
+      });
+      if (error) throw error;
+      toast.success("درس اضافه شد");
+      onSaved(); setOpen(false); reset(); setUrl("");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Error"); }
+    finally { setLoading(false); }
+  };
+
+  const loadList = async () => {
+    setLoading(true);
+    try {
+      const res = await listFn({ data: { mbookId: mbookId.trim() } });
+      setSessions(res.sessions);
+      if (!res.sessions.length) toast.error("جلسه‌ای پیدا نشد");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Error"); }
+    finally { setLoading(false); }
+  };
+
+  const importAll = async () => {
+    setLoading(true); setProgress({ done: 0, total: sessions.length });
+    try {
+      let start = 0; let inserted = 0;
+      while (true) {
+        const res = await importFn({ data: { mbookId: mbookId.trim(), bookId, courseId, startIndex: start, limit: 10 } });
+        inserted += res.inserted;
+        setProgress({ done: Math.min(res.nextStart, res.total), total: res.total });
+        if (!res.hasMore) break;
+        start = res.nextStart;
+      }
+      toast.success(`${inserted} درس وارد شد`);
+      onSaved(); setOpen(false); reset(); setMbookId(""); setSessions([]);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Error"); }
+    finally { setLoading(false); setProgress(null); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { reset(); } }}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader><DialogTitle>وارد کردن توضیح درس از درس‌گفتار</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <div className="flex gap-2 text-sm">
+            <Button type="button" size="sm" variant={mode === "single" ? "default" : "outline"} onClick={() => { setMode("single"); reset(); }}>یک جلسه</Button>
+            <Button type="button" size="sm" variant={mode === "bulk" ? "default" : "outline"} onClick={() => { setMode("bulk"); reset(); }}>کل کتاب</Button>
+          </div>
+
+          {mode === "single" && (
+            <>
+              <div className="space-y-2">
+                <Label>آدرس جلسه (مثال: https://darsgoftar.net/mbook/12/176)</Label>
+                <Input dir="ltr" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://darsgoftar.net/mbook/.../..." />
+              </div>
+              {!preview ? (
+                <Button onClick={loadSingle} disabled={loading || !url.trim()} className="w-full bg-hero text-primary-foreground gap-2">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookDown className="h-4 w-4" />}
+                  پیش‌نمایش
+                </Button>
+              ) : (
+                <>
+                  <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+                    <div className="font-bold">{preview.sessionTitle}</div>
+                    <div className="text-xs text-muted-foreground">{preview.boxesCount} بخش استخراج شد</div>
+                    <div className="max-h-64 overflow-y-auto text-sm rich-content" dangerouslySetInnerHTML={{ __html: preview.combinedHtml }} />
+                  </div>
+                  <Button onClick={saveSingle} disabled={loading} className="w-full bg-hero text-primary-foreground">
+                    افزودن به‌عنوان درس
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+
+          {mode === "bulk" && (
+            <>
+              <div className="space-y-2">
+                <Label>شناسه کتاب در درس‌گفتار (mbook ID — مثلا برای /mbook/12 عدد 12)</Label>
+                <Input dir="ltr" value={mbookId} onChange={e => setMbookId(e.target.value.replace(/\D/g, ""))} placeholder="12" />
+              </div>
+              {sessions.length === 0 ? (
+                <Button onClick={loadList} disabled={loading || !mbookId.trim()} className="w-full bg-hero text-primary-foreground gap-2">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookDown className="h-4 w-4" />}
+                  دریافت فهرست جلسات
+                </Button>
+              ) : (
+                <>
+                  <div className="text-sm">تعداد جلسات یافت‌شده: <b>{sessions.length}</b></div>
+                  <div className="max-h-56 overflow-y-auto rounded-xl border border-border divide-y">
+                    {sessions.slice(0, 100).map(s => (
+                      <div key={s.url} className="px-3 py-2 text-sm flex gap-2">
+                        <span className="text-muted-foreground">{s.number}</span>
+                        <span>{s.title}</span>
+                      </div>
+                    ))}
+                    {sessions.length > 100 && <div className="px-3 py-2 text-xs text-muted-foreground">و {sessions.length - 100} جلسه دیگر…</div>}
+                  </div>
+                  {progress && (
+                    <div className="text-xs text-muted-foreground">در حال وارد کردن: {progress.done} / {progress.total}</div>
+                  )}
+                  <Button onClick={importAll} disabled={loading} className="w-full bg-hero text-primary-foreground gap-2">
+                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                    وارد کردن همه ({sessions.length})
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
