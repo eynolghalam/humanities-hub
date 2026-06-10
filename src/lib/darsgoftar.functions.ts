@@ -197,3 +197,78 @@ export const importDarsgoftarBook = createServerFn({ method: "POST" })
       nextStart: data.startIndex + data.limit,
     };
   });
+
+// ---------------- Book text pages (/book/view/...) ----------------
+
+function parseBookPage(root: HTMLElement) {
+  const pgEl = root.querySelector("#selectable-content .page-content");
+  const pageNum = cleanText(pgEl?.querySelector(".pgnum")?.getAttribute("data-text") ?? pgEl?.querySelector(".pgnum")?.text);
+  const contentEl = pgEl?.querySelector(".pgcontent");
+  // strip page-number markers from inner html
+  const html = (contentEl?.innerHTML ?? "").trim();
+  const text = cleanText(contentEl?.text);
+  const bookTitle = cleanText(root.querySelector("h1")?.text);
+  // next/prev page anchors
+  const anchors = root.querySelectorAll("a.pagechange");
+  let prevUrl: string | null = null;
+  let nextUrl: string | null = null;
+  anchors.forEach(a => {
+    const dir = a.getAttribute("data-dir");
+    const href = a.getAttribute("href") ?? "";
+    if (!href) return;
+    // data-dir="up" = next (next page number), "dwn" = previous
+    if (dir === "up") nextUrl = href;
+    else if (dir === "dwn") prevUrl = href;
+  });
+  return { bookTitle, pageNum, html, text, prevUrl, nextUrl };
+}
+
+const BOOK_URL_RE = /^https?:\/\/(www\.)?darsgoftar\.net\/book\/view\/\d+\/\d+\/\d+\/\d+\/?$/i;
+
+export const fetchDarsgoftarBookPage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ url: z.string().url() }).parse)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const roles = (roleRows ?? []).map(r => r.role as string);
+    if (!roles.includes("admin") && !roles.includes("teacher")) throw new Error("Unauthorized");
+    if (!BOOK_URL_RE.test(data.url)) throw new Error("URL باید مانند https://darsgoftar.net/book/view/A/B/C/PAGE باشد");
+    const root = await fetchHtml(data.url);
+    return parseBookPage(root);
+  });
+
+// Fetch a batch of consecutive pages starting at startUrl.
+export const fetchDarsgoftarBookPages = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      startUrl: z.string().url(),
+      limit: z.number().int().min(1).max(25).default(10),
+    }).parse,
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const roles = (roleRows ?? []).map(r => r.role as string);
+    if (!roles.includes("admin") && !roles.includes("teacher")) throw new Error("Unauthorized");
+    if (!BOOK_URL_RE.test(data.startUrl)) throw new Error("URL باید مانند https://darsgoftar.net/book/view/A/B/C/PAGE باشد");
+
+    const pages: Array<{ url: string; pageNum: string; html: string; text: string }> = [];
+    let currentUrl: string | null = data.startUrl;
+    let nextUrl: string | null = null;
+    let bookTitle = "";
+    for (let i = 0; i < data.limit && currentUrl; i++) {
+      try {
+        const root = await fetchHtml(currentUrl);
+        const p = parseBookPage(root);
+        if (!bookTitle) bookTitle = p.bookTitle;
+        pages.push({ url: currentUrl, pageNum: p.pageNum, html: p.html, text: p.text });
+        nextUrl = p.nextUrl;
+        currentUrl = p.nextUrl;
+      } catch {
+        break;
+      }
+    }
+    return { bookTitle, pages, nextUrl };
+  });
