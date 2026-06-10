@@ -308,8 +308,9 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
   const fetchSessionFn = useServerFn(fetchDarsgoftarSession);
   const listFn = useServerFn(listDarsgoftarSessions);
   const importFn = useServerFn(importDarsgoftarBook);
+  const fetchBookPagesFn = useServerFn(fetchDarsgoftarBookPages);
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"single" | "bulk">("single");
+  const [mode, setMode] = useState<"single" | "bulk" | "booktext">("single");
   const [url, setUrl] = useState("");
   const [mbookId, setMbookId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -317,7 +318,16 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
   const [sessions, setSessions] = useState<DgSession[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
-  const reset = () => { setPreview(null); setSessions(null as never); setSessions([]); setProgress(null); };
+  // book-text mode state
+  const [bookStartUrl, setBookStartUrl] = useState("");
+  const [bookMaxPages, setBookMaxPages] = useState(50);
+  const [bookSaveMode, setBookSaveMode] = useState<"combined" | "perPage">("combined");
+  const [bookLessonTitle, setBookLessonTitle] = useState("");
+  const [bookPages, setBookPages] = useState<Array<{ url: string; pageNum: string; html: string; text: string }>>([]);
+  const [bookFetchedTitle, setBookFetchedTitle] = useState("");
+
+  const reset = () => { setPreview(null); setSessions([]); setProgress(null); setBookPages([]); setBookFetchedTitle(""); };
+
 
   const loadSingle = async () => {
     setLoading(true);
