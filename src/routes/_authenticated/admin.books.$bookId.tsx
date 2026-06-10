@@ -517,6 +517,64 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
               )}
             </>
           )}
+
+          {mode === "booktext" && (
+            <>
+              <div className="space-y-2">
+                <Label>آدرس صفحه شروع کتاب (مثال: https://darsgoftar.net/book/view/6/6/13/1)</Label>
+                <Input dir="ltr" value={bookStartUrl} onChange={e => setBookStartUrl(e.target.value)} placeholder="https://darsgoftar.net/book/view/.../.../.../1" />
+                <p className="text-xs text-muted-foreground">از این صفحه به بعد، صفحات پشت‌سرهم با دنبال کردن دکمه «صفحه بعد» استخراج می‌شوند.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>حداکثر تعداد صفحات</Label>
+                  <Input type="number" min={1} max={500} value={bookMaxPages} onChange={e => setBookMaxPages(Math.max(1, Math.min(500, Number(e.target.value) || 1)))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>روش ذخیره</Label>
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" variant={bookSaveMode === "combined" ? "default" : "outline"} onClick={() => setBookSaveMode("combined")}>یک درس واحد</Button>
+                    <Button type="button" size="sm" variant={bookSaveMode === "perPage" ? "default" : "outline"} onClick={() => setBookSaveMode("perPage")}>هر صفحه یک درس</Button>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{bookSaveMode === "combined" ? "عنوان درس" : "پیشوند عنوان دروس"}</Label>
+                <Input value={bookLessonTitle} onChange={e => setBookLessonTitle(e.target.value)} placeholder="متن کتاب" />
+              </div>
+
+              {bookPages.length === 0 ? (
+                <Button onClick={loadBookPages} disabled={loading || !bookStartUrl.trim()} className="w-full bg-hero text-primary-foreground gap-2">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookDown className="h-4 w-4" />}
+                  استخراج صفحات
+                </Button>
+              ) : (
+                <>
+                  <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+                    <div className="text-sm">
+                      {bookFetchedTitle && <div className="font-bold">{bookFetchedTitle}</div>}
+                      <div className="text-xs text-muted-foreground">{bookPages.length} صفحه استخراج شد</div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto text-sm rich-content border-t pt-2" dir="rtl">
+                      {bookPages.slice(0, 5).map(p => (
+                        <div key={p.url} className="mb-3">
+                          <div className="text-xs text-muted-foreground mb-1">صفحه {p.pageNum}</div>
+                          <div dangerouslySetInnerHTML={{ __html: p.html.slice(0, 1500) }} />
+                        </div>
+                      ))}
+                      {bookPages.length > 5 && <div className="text-xs text-muted-foreground">…و {bookPages.length - 5} صفحه دیگر</div>}
+                    </div>
+                  </div>
+                  {progress && <div className="text-xs text-muted-foreground">در حال دریافت: {progress.done} / {progress.total}</div>}
+                  <Button onClick={saveBookPages} disabled={loading} className="w-full bg-hero text-primary-foreground gap-2">
+                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                    ذخیره
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+
         </div>
       </DialogContent>
     </Dialog>
