@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import * as Icons from "lucide-react";
 import { ArrowLeft, BookOpen, Sparkles, Smartphone } from "lucide-react";
@@ -27,6 +28,7 @@ type Block = {
 
 function Index() {
   const { t, dir, pick } = useI18n();
+  const { user } = useAuth();
 
   const { data: settings } = useQuery({
     queryKey: ["site_settings"],
@@ -54,7 +56,6 @@ function Index() {
   const heroTitle = get("hero_title", t("heroTitle"));
   const heroSub = get("hero_sub", t("heroSub"));
   const ctaPrimary = get("cta_primary", t("start"));
-  const ctaSecondary = get("cta_secondary", t("signup"));
   const tagline = get("tagline", t("tagline"));
   const heroImage = settings?.["hero_image_url"]?.value_fa || null;
 
@@ -81,6 +82,17 @@ function Index() {
       }))
     : defaultBlocks;
 
+  // Determine the target route based on authentication status
+  const handleStartLearning = () => {
+    if (user) {
+      // User is authenticated, navigate to courses
+      window.location.href = "/courses";
+    } else {
+      // User is not authenticated, navigate to auth page
+      window.location.href = "/auth";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -99,15 +111,14 @@ function Index() {
                 <h1 className="mt-6 text-4xl font-extrabold tracking-tight md:text-6xl">{heroTitle}</h1>
                 <p className="mt-6 text-lg text-muted-foreground md:text-xl">{heroSub}</p>
                 <div className={`mt-10 flex flex-wrap items-center gap-3 ${heroImage ? "" : "justify-center"}`}>
-                  <Link to="/courses">
-                    <Button size="lg" className="bg-hero text-primary-foreground shadow-elegant hover:opacity-95 gap-2">
-                      {ctaPrimary}
-                      <ArrowLeft className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} />
-                    </Button>
-                  </Link>
-                  <Link to="/auth">
-                    <Button size="lg" variant="outline">{ctaSecondary}</Button>
-                  </Link>
+                  <Button 
+                    size="lg" 
+                    className="bg-hero text-primary-foreground shadow-elegant hover:opacity-95 gap-2 cursor-pointer"
+                    onClick={handleStartLearning}
+                  >
+                    {ctaPrimary}
+                    <ArrowLeft className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} />
+                  </Button>
                 </div>
               </div>
               {heroImage && (
