@@ -132,9 +132,28 @@ export function applyTheme(themeName: ThemeName) {
   const theme = getTheme(themeName);
   const root = document.documentElement;
 
+  // Map of theme property names to CSS variable names (without color- prefix)
+  const cssVarMap: Record<keyof ThemeColors, string> = {
+    background: 'background',
+    foreground: 'foreground',
+    card: 'card',
+    cardForeground: 'card-foreground',
+    primary: 'primary',
+    primaryForeground: 'primary-foreground',
+    secondary: 'secondary',
+    secondaryForeground: 'secondary-foreground',
+    accent: 'accent',
+    accentForeground: 'accent-foreground',
+    muted: 'muted',
+    mutedForeground: 'muted-foreground',
+    destructive: 'destructive',
+    destructiveForeground: 'destructive-foreground',
+    border: 'border',
+  };
+
   Object.entries(theme).forEach(([key, value]) => {
-    const cssVar = `--color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-    root.style.setProperty(cssVar, value);
+    const cssVarName = cssVarMap[key as keyof ThemeColors];
+    root.style.setProperty(`--${cssVarName}`, value);
   });
 
   // Store theme preference in localStorage
