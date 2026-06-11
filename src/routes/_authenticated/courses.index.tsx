@@ -15,7 +15,7 @@ function CoursesList() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("courses")
-        .select("id,title,description,sort_order, lessons(count)")
+        .select("id,title,description,sort_order, books(count)")
         .order("sort_order", { ascending: true });
       if (error) throw error;
       return data;
@@ -39,7 +39,7 @@ function CoursesList() {
 
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {courses?.map((c) => {
-          const count = (c.lessons as unknown as { count: number }[])?.[0]?.count ?? 0;
+          const count = (c.books as unknown as { count: number }[])?.[0]?.count ?? 0;
           return (
             <Link
               key={c.id}
@@ -55,7 +55,7 @@ function CoursesList() {
               </div>
               <h3 className="mt-4 text-lg font-bold">{c.title}</h3>
               {c.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{c.description}</p>}
-              <div className="mt-4 text-xs text-muted-foreground">{t("lessonsCount")}: {count}</div>
+              <div className="mt-4 text-xs text-muted-foreground">{t("books")}: {count}</div>
             </Link>
           );
         })}
