@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LogOut, Shield, Languages, GraduationCap, Map, BarChart3 } from "lucide-react";
 import { StatsBar } from "@/components/StatsBar";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,6 +69,7 @@ export function Header() {
               </Button>
             </Link>
           )}
+          <ThemeSwitcher />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-1.5">
