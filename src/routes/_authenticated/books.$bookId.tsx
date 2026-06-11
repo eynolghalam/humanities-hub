@@ -44,6 +44,7 @@ function BookDetail() {
         <div className="bg-card-soft mb-8 rounded-2xl border border-border p-8 shadow-soft">
           <h1 className="text-3xl font-extrabold">{data.book.title}</h1>
           {data.book.description && <p className="mt-3 text-muted-foreground">{data.book.description}</p>}
+          <div className="mt-4 text-xs text-muted-foreground">{t("lessonsCount")}: {data.lessons.length}</div>
           <BookProgressBar bookId={bookId} />
         </div>
       )}
