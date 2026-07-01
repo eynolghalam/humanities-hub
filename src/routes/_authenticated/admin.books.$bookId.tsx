@@ -128,6 +128,7 @@ function ManageLessons() {
 function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId: string; courseId: string; lesson?: Lesson; children: React.ReactNode; onSaved: () => void }) {
   const { user } = useAuth();
   const { t } = useI18n();
+  const translateFn = useServerFn(translateLessonText);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(lesson?.title ?? "");
   const [originalText, setOriginalText] = useState(lesson?.original_text ?? "");
@@ -139,6 +140,19 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [slideFile, setSlideFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
+
+  const doTranslate = async () => {
+    if (!originalText.trim()) { toast.error("ابتدا متن اصلی درس را وارد کنید."); return; }
+    setTranslating(true);
+    try {
+      const res = await translateFn({ data: { text: originalText, targetLang: "fa" } });
+      setTranslation(res.translation);
+      toast.success("ترجمه انجام شد");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "خطا در ترجمه");
+    } finally { setTranslating(false); }
+  };
 
   const upload = async (bucket: string, file: File): Promise<string> => {
     const ext = file.name.split(".").pop();
