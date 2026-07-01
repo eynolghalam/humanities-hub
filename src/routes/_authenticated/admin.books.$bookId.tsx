@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { splitBookIntoLessons } from "@/lib/book-import.functions";
+import { translateLessonText } from "@/lib/exam.functions";
 import { fetchDarsgoftarSession, listDarsgoftarSessions, importDarsgoftarBook, fetchDarsgoftarBookPages } from "@/lib/darsgoftar.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronLeft, Sparkles, BookDown, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, Sparkles, BookDown, Loader2, Languages, FileQuestion } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/books/$bookId")({
   component: ManageLessons,
@@ -78,7 +79,10 @@ function ManageLessons() {
           <p className="mt-1 text-sm text-muted-foreground">{t("manageLessons")}</p>
         </div>
         {courseId && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link to="/books/$bookId/exams" params={{ bookId }}>
+              <Button variant="outline" className="gap-2"><FileQuestion className="h-4 w-4" />سوالات امتحانی</Button>
+            </Link>
             <ImportFromTextDialog bookId={bookId} courseId={courseId} existingCount={lessons?.length ?? 0} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
               <Button variant="outline" className="gap-2"><Sparkles className="h-4 w-4" />{t("importFromText")}</Button>
             </ImportFromTextDialog>
@@ -127,6 +131,7 @@ function ManageLessons() {
 function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId: string; courseId: string; lesson?: Lesson; children: React.ReactNode; onSaved: () => void }) {
   const { user } = useAuth();
   const { t } = useI18n();
+  const translateFn = useServerFn(translateLessonText);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(lesson?.title ?? "");
   const [originalText, setOriginalText] = useState(lesson?.original_text ?? "");
@@ -138,6 +143,19 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [slideFile, setSlideFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
+
+  const doTranslate = async () => {
+    if (!originalText.trim()) { toast.error("ابتدا متن اصلی درس را وارد کنید."); return; }
+    setTranslating(true);
+    try {
+      const res = await translateFn({ data: { text: originalText, targetLang: "fa" } });
+      setTranslation(res.translation);
+      toast.success("ترجمه انجام شد");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "خطا در ترجمه");
+    } finally { setTranslating(false); }
+  };
 
   const upload = async (bucket: string, file: File): Promise<string> => {
     const ext = file.name.split(".").pop();
@@ -179,7 +197,16 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
         <form onSubmit={save} className="space-y-4">
           <div className="space-y-2"><Label>{t("title")}</Label><Input required value={title} onChange={e => setTitle(e.target.value)} /></div>
           <div className="space-y-2"><Label>{t("originalText")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><Textarea rows={5} value={originalText} onChange={e => setOriginalText(e.target.value)} dir="ltr" /></div>
-          <div className="space-y-2"><Label>{t("translation")}</Label><Textarea rows={5} value={translation} onChange={e => setTranslation(e.target.value)} /></div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label>{t("translation")}</Label>
+              <Button type="button" size="sm" variant="outline" onClick={doTranslate} disabled={translating || !originalText.trim()} className="gap-1 h-8">
+                {translating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Languages className="h-3 w-3" />}
+                {translating ? "در حال ترجمه…" : "ترجمه با هوش مصنوعی"}
+              </Button>
+            </div>
+            <Textarea rows={5} value={translation} onChange={e => setTranslation(e.target.value)} />
+          </div>
           <div className="space-y-2"><Label>{t("explanation")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><Textarea rows={5} value={explanation} onChange={e => setExplanation(e.target.value)} dir="ltr" /></div>
           <div className="space-y-2"><Label>{t("content")}</Label><Textarea rows={6} value={content} onChange={e => setContent(e.target.value)} /></div>
           <div className="space-y-2"><Label>{t("videoEmbed")}</Label><Textarea rows={3} value={videoEmbed} onChange={e => setVideoEmbed(e.target.value)} dir="ltr" placeholder='<iframe src="..."></iframe>' /></div>

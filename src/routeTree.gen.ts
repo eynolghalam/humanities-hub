@@ -21,6 +21,7 @@ import { Route as AuthenticatedCoursesCourseIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedBooksBookIdRouteImport } from './routes/_authenticated/books.$bookId'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminHomepageRouteImport } from './routes/_authenticated/admin.homepage'
+import { Route as AuthenticatedBooksBookIdExamsRouteImport } from './routes/_authenticated/books.$bookId.exams'
 import { Route as AuthenticatedAdminCoursesCourseIdRouteImport } from './routes/_authenticated/admin.courses.$courseId'
 import { Route as AuthenticatedAdminBooksBookIdRouteImport } from './routes/_authenticated/admin.books.$bookId'
 
@@ -88,6 +89,12 @@ const AuthenticatedAdminHomepageRoute =
     path: '/admin/homepage',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBooksBookIdExamsRoute =
+  AuthenticatedBooksBookIdExamsRouteImport.update({
+    id: '/exams',
+    path: '/exams',
+    getParentRoute: () => AuthenticatedBooksBookIdRoute,
+  } as any)
 const AuthenticatedAdminCoursesCourseIdRoute =
   AuthenticatedAdminCoursesCourseIdRouteImport.update({
     id: '/admin/courses/$courseId',
@@ -108,13 +115,14 @@ export interface FileRoutesByFullPath {
   '/stats': typeof AuthenticatedStatsRoute
   '/admin/homepage': typeof AuthenticatedAdminHomepageRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
-  '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
+  '/books/$bookId': typeof AuthenticatedBooksBookIdRouteWithChildren
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/lessons/$lessonId': typeof AuthenticatedLessonsLessonIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/courses/': typeof AuthenticatedCoursesIndexRoute
   '/admin/books/$bookId': typeof AuthenticatedAdminBooksBookIdRoute
   '/admin/courses/$courseId': typeof AuthenticatedAdminCoursesCourseIdRoute
+  '/books/$bookId/exams': typeof AuthenticatedBooksBookIdExamsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -123,13 +131,14 @@ export interface FileRoutesByTo {
   '/stats': typeof AuthenticatedStatsRoute
   '/admin/homepage': typeof AuthenticatedAdminHomepageRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
-  '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
+  '/books/$bookId': typeof AuthenticatedBooksBookIdRouteWithChildren
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/lessons/$lessonId': typeof AuthenticatedLessonsLessonIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/courses': typeof AuthenticatedCoursesIndexRoute
   '/admin/books/$bookId': typeof AuthenticatedAdminBooksBookIdRoute
   '/admin/courses/$courseId': typeof AuthenticatedAdminCoursesCourseIdRoute
+  '/books/$bookId/exams': typeof AuthenticatedBooksBookIdExamsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -140,13 +149,14 @@ export interface FileRoutesById {
   '/_authenticated/stats': typeof AuthenticatedStatsRoute
   '/_authenticated/admin/homepage': typeof AuthenticatedAdminHomepageRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
-  '/_authenticated/books/$bookId': typeof AuthenticatedBooksBookIdRoute
+  '/_authenticated/books/$bookId': typeof AuthenticatedBooksBookIdRouteWithChildren
   '/_authenticated/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/_authenticated/lessons/$lessonId': typeof AuthenticatedLessonsLessonIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/courses/': typeof AuthenticatedCoursesIndexRoute
   '/_authenticated/admin/books/$bookId': typeof AuthenticatedAdminBooksBookIdRoute
   '/_authenticated/admin/courses/$courseId': typeof AuthenticatedAdminCoursesCourseIdRoute
+  '/_authenticated/books/$bookId/exams': typeof AuthenticatedBooksBookIdExamsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/courses/'
     | '/admin/books/$bookId'
     | '/admin/courses/$courseId'
+    | '/books/$bookId/exams'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/admin/books/$bookId'
     | '/admin/courses/$courseId'
+    | '/books/$bookId/exams'
   id:
     | '__root__'
     | '/'
@@ -195,6 +207,7 @@ export interface FileRouteTypes {
     | '/_authenticated/courses/'
     | '/_authenticated/admin/books/$bookId'
     | '/_authenticated/admin/courses/$courseId'
+    | '/_authenticated/books/$bookId/exams'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -289,6 +302,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminHomepageRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/books/$bookId/exams': {
+      id: '/_authenticated/books/$bookId/exams'
+      path: '/exams'
+      fullPath: '/books/$bookId/exams'
+      preLoaderRoute: typeof AuthenticatedBooksBookIdExamsRouteImport
+      parentRoute: typeof AuthenticatedBooksBookIdRoute
+    }
     '/_authenticated/admin/courses/$courseId': {
       id: '/_authenticated/admin/courses/$courseId'
       path: '/admin/courses/$courseId'
@@ -306,12 +326,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedBooksBookIdRouteChildren {
+  AuthenticatedBooksBookIdExamsRoute: typeof AuthenticatedBooksBookIdExamsRoute
+}
+
+const AuthenticatedBooksBookIdRouteChildren: AuthenticatedBooksBookIdRouteChildren =
+  {
+    AuthenticatedBooksBookIdExamsRoute: AuthenticatedBooksBookIdExamsRoute,
+  }
+
+const AuthenticatedBooksBookIdRouteWithChildren =
+  AuthenticatedBooksBookIdRoute._addFileChildren(
+    AuthenticatedBooksBookIdRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedJourneyRoute: typeof AuthenticatedJourneyRoute
   AuthenticatedStatsRoute: typeof AuthenticatedStatsRoute
   AuthenticatedAdminHomepageRoute: typeof AuthenticatedAdminHomepageRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
-  AuthenticatedBooksBookIdRoute: typeof AuthenticatedBooksBookIdRoute
+  AuthenticatedBooksBookIdRoute: typeof AuthenticatedBooksBookIdRouteWithChildren
   AuthenticatedCoursesCourseIdRoute: typeof AuthenticatedCoursesCourseIdRoute
   AuthenticatedLessonsLessonIdRoute: typeof AuthenticatedLessonsLessonIdRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -325,7 +359,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStatsRoute: AuthenticatedStatsRoute,
   AuthenticatedAdminHomepageRoute: AuthenticatedAdminHomepageRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
-  AuthenticatedBooksBookIdRoute: AuthenticatedBooksBookIdRoute,
+  AuthenticatedBooksBookIdRoute: AuthenticatedBooksBookIdRouteWithChildren,
   AuthenticatedCoursesCourseIdRoute: AuthenticatedCoursesCourseIdRoute,
   AuthenticatedLessonsLessonIdRoute: AuthenticatedLessonsLessonIdRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
