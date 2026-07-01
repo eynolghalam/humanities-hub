@@ -60,7 +60,7 @@ function LessonView() {
 
       {lesson.original_text && (
         <Section icon={BookOpen} title={t("originalText")}>
-          <div className="whitespace-pre-wrap text-foreground leading-loose">{lesson.original_text}</div>
+          <div className="rich-content text-foreground leading-loose" dangerouslySetInnerHTML={{ __html: sanitizeContent(lesson.original_text) }} />
         </Section>
       )}
 
@@ -72,9 +72,10 @@ function LessonView() {
 
       {lesson.explanation && (
         <Section icon={Lightbulb} title={t("explanation")}>
-          <div className="whitespace-pre-wrap text-foreground leading-loose">{lesson.explanation}</div>
+          <div className="rich-content text-foreground leading-loose" dangerouslySetInnerHTML={{ __html: sanitizeContent(lesson.explanation) }} />
         </Section>
       )}
+
 
       {lesson.content && (
         <Section icon={FileText} title={t("description")}>

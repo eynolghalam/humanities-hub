@@ -178,9 +178,9 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
         <DialogHeader><DialogTitle>{lesson ? t("editLesson") : t("addLesson")}</DialogTitle></DialogHeader>
         <form onSubmit={save} className="space-y-4">
           <div className="space-y-2"><Label>{t("title")}</Label><Input required value={title} onChange={e => setTitle(e.target.value)} /></div>
-          <div className="space-y-2"><Label>{t("originalText")}</Label><Textarea rows={5} value={originalText} onChange={e => setOriginalText(e.target.value)} /></div>
+          <div className="space-y-2"><Label>{t("originalText")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><Textarea rows={5} value={originalText} onChange={e => setOriginalText(e.target.value)} dir="ltr" /></div>
           <div className="space-y-2"><Label>{t("translation")}</Label><Textarea rows={5} value={translation} onChange={e => setTranslation(e.target.value)} /></div>
-          <div className="space-y-2"><Label>{t("explanation")}</Label><Textarea rows={5} value={explanation} onChange={e => setExplanation(e.target.value)} /></div>
+          <div className="space-y-2"><Label>{t("explanation")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><Textarea rows={5} value={explanation} onChange={e => setExplanation(e.target.value)} dir="ltr" /></div>
           <div className="space-y-2"><Label>{t("content")}</Label><Textarea rows={6} value={content} onChange={e => setContent(e.target.value)} /></div>
           <div className="space-y-2"><Label>{t("videoEmbed")}</Label><Textarea rows={3} value={videoEmbed} onChange={e => setVideoEmbed(e.target.value)} dir="ltr" placeholder='<iframe src="..."></iframe>' /></div>
           <div className="space-y-2">
