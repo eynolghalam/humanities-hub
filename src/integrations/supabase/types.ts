@@ -41,6 +41,79 @@ export type Database = {
         }
         Relationships: []
       }
+      book_exam_files: {
+        Row: {
+          book_id: string
+          created_at: string
+          file_path: string
+          file_type: string
+          id: string
+          title: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          file_path: string
+          file_type: string
+          id?: string
+          title?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          file_path?: string
+          file_type?: string
+          id?: string
+          title?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_exam_files_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_exam_questions: {
+        Row: {
+          book_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          question: string
+          sort_order: number
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          question: string
+          sort_order?: number
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          question?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_exam_questions_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       books: {
         Row: {
           category_id: string | null
