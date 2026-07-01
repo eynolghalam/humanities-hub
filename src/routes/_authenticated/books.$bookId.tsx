@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
-import { ChevronLeft, GraduationCap } from "lucide-react";
+import { ChevronLeft, GraduationCap, FileQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BookProgressBar } from "@/components/ProgressInline";
 
@@ -46,6 +46,9 @@ function BookDetail() {
           {data.book.description && <p className="mt-3 text-muted-foreground">{data.book.description}</p>}
           <div className="mt-4 text-xs text-muted-foreground">{t("lessonsCount")}: {data.lessons.length}</div>
           <BookProgressBar bookId={bookId} />
+          <Link to="/books/$bookId/exams" params={{ bookId }} className="mt-4 inline-flex">
+            <Button variant="outline" className="gap-2"><FileQuestion className="h-4 w-4" />سوالات امتحانی</Button>
+          </Link>
         </div>
       )}
 

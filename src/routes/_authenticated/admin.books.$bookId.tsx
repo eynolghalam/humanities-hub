@@ -79,7 +79,10 @@ function ManageLessons() {
           <p className="mt-1 text-sm text-muted-foreground">{t("manageLessons")}</p>
         </div>
         {courseId && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link to="/books/$bookId/exams" params={{ bookId }}>
+              <Button variant="outline" className="gap-2"><FileQuestion className="h-4 w-4" />سوالات امتحانی</Button>
+            </Link>
             <ImportFromTextDialog bookId={bookId} courseId={courseId} existingCount={lessons?.length ?? 0} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
               <Button variant="outline" className="gap-2"><Sparkles className="h-4 w-4" />{t("importFromText")}</Button>
             </ImportFromTextDialog>
