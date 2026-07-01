@@ -21,8 +21,10 @@ async function callAI(body: unknown) {
   return res.json();
 }
 
-async function requireStaff(supabase: { from: (t: string) => { select: (c: string) => { eq: (col: string, val: string) => Promise<{ data: { role: string }[] | null }> } } }, userId: string) {
-  const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+type MinSupabase = { from: (t: "user_roles") => { select: (c: string) => { eq: (col: string, val: string) => Promise<{ data: Array<{ role: string }> | null }> } } };
+async function requireStaff(supabase: unknown, userId: string) {
+  const sb = supabase as MinSupabase;
+  const { data } = await sb.from("user_roles").select("role").eq("user_id", userId);
   const roles = (data ?? []).map((r) => r.role);
   if (!roles.includes("admin") && !roles.includes("teacher")) {
     throw new Error("دسترسی غیرمجاز.");
