@@ -1,9 +1,6 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import url('https://cdn.jsdelivr.net/npm/@jadijadi/amiafeminist/css/fonts/sans-light.css');
-@import url('https://cdn.jsdelivr.net/npm/@jadijadi/amiafeminist/css/fonts/sans-regular.css');
-@import url('https://cdn.jsdelivr.net/npm/@jadijadi/amiafeminist/css/fonts/sans-bold.css');
 
 @custom-variant dark (&:is(.dark *));
 
