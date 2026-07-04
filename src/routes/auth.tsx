@@ -11,6 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" && s.next.startsWith("/") ? s.next : undefined,
+  }),
   component: AuthPage,
 });
 
@@ -18,6 +21,8 @@ function AuthPage() {
   const { t } = useI18n();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const dest = next ?? "/courses";
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,8 +30,8 @@ function AuthPage() {
   const [requestedRole, setRequestedRole] = useState<"student" | "teacher">("student");
 
   useEffect(() => {
-    if (user) navigate({ to: "/courses" });
-  }, [user, navigate]);
+    if (user) navigate({ to: dest });
+  }, [user, navigate, dest]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +39,7 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) toast.error(error.message);
-    else navigate({ to: "/courses" });
+    else navigate({ to: dest });
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -44,7 +49,7 @@ function AuthPage() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/courses`,
+        emailRedirectTo: `${window.location.origin}${dest}`,
         data: { full_name: fullName, requested_role: requestedRole },
       },
     });
