@@ -474,7 +474,7 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
         const truncated = combinedHtml.slice(0, 190_000);
         const { lessons: aiLessons } = await splitBookFn({ data: { text: truncated } });
         if (!aiLessons?.length) throw new Error("هوش مصنوعی نتوانست فصل/درسی تشخیص دهد");
-        const rows = aiLessons.map((l, i) => ({
+        const rows = aiLessons.map((l: { title: string; original_text: string; translation: string; explanation: string }, i: number) => ({
           course_id: courseId, book_id: bookId,
           title: l.title || `درس ${i + 1}`,
           original_text: l.original_text || "",
