@@ -336,6 +336,7 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
   const listFn = useServerFn(listDarsgoftarSessions);
   const importFn = useServerFn(importDarsgoftarBook);
   const fetchBookPagesFn = useServerFn(fetchDarsgoftarBookPages);
+  const splitBookFn = useServerFn(splitBookIntoLessons);
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"single" | "bulk" | "booktext">("single");
   const [url, setUrl] = useState("");
