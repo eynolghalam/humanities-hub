@@ -580,11 +580,24 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
                 </div>
                 <div className="space-y-2">
                   <Label>روش ذخیره</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant={bookSaveMode === "combined" ? "default" : "outline"} onClick={() => setBookSaveMode("combined")}>یک درس واحد</Button>
                     <Button type="button" size="sm" variant={bookSaveMode === "perPage" ? "default" : "outline"} onClick={() => setBookSaveMode("perPage")}>هر صفحه یک درس</Button>
+                    <Button type="button" size="sm" variant={bookSaveMode === "smart" ? "default" : "outline"} onClick={() => setBookSaveMode("smart")} className="gap-1"><Sparkles className="h-3 w-3" />تشخیص هوشمند فصل‌ها (AI)</Button>
                   </div>
                 </div>
+              </div>
+              {bookSaveMode !== "smart" && (
+              <div className="space-y-2">
+                <Label>{bookSaveMode === "combined" ? "عنوان درس" : "پیشوند عنوان دروس"}</Label>
+                <Input value={bookLessonTitle} onChange={e => setBookLessonTitle(e.target.value)} placeholder="متن کتاب" />
+              </div>
+              )}
+              {bookSaveMode === "smart" && (
+                <p className="text-xs text-muted-foreground rounded-lg bg-primary/5 border border-primary/20 p-3">
+                  هوش مصنوعی متن کتاب را تحلیل کرده و به‌طور خودکار به فصل‌ها و دروس تقسیم می‌کند. عنوان، متن اصلی، ترجمه و توضیح هر درس استخراج می‌شود.
+                </p>
+              )}
               </div>
               <div className="space-y-2">
                 <Label>{bookSaveMode === "combined" ? "عنوان درس" : "پیشوند عنوان دروس"}</Label>
