@@ -348,7 +348,7 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
   // book-text mode state
   const [bookStartUrl, setBookStartUrl] = useState("");
   const [bookMaxPages, setBookMaxPages] = useState(50);
-  const [bookSaveMode, setBookSaveMode] = useState<"combined" | "perPage">("combined");
+  const [bookSaveMode, setBookSaveMode] = useState<"combined" | "perPage" | "smart">("combined");
   const [bookLessonTitle, setBookLessonTitle] = useState("");
   const [bookPages, setBookPages] = useState<Array<{ url: string; pageNum: string; html: string; text: string }>>([]);
   const [bookFetchedTitle, setBookFetchedTitle] = useState("");
