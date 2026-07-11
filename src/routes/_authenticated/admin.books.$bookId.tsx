@@ -336,6 +336,7 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
   const listFn = useServerFn(listDarsgoftarSessions);
   const importFn = useServerFn(importDarsgoftarBook);
   const fetchBookPagesFn = useServerFn(fetchDarsgoftarBookPages);
+  const splitBookFn = useServerFn(splitBookIntoLessons);
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"single" | "bulk" | "booktext">("single");
   const [url, setUrl] = useState("");
@@ -348,7 +349,7 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
   // book-text mode state
   const [bookStartUrl, setBookStartUrl] = useState("");
   const [bookMaxPages, setBookMaxPages] = useState(50);
-  const [bookSaveMode, setBookSaveMode] = useState<"combined" | "perPage">("combined");
+  const [bookSaveMode, setBookSaveMode] = useState<"combined" | "perPage" | "smart">("combined");
   const [bookLessonTitle, setBookLessonTitle] = useState("");
   const [bookPages, setBookPages] = useState<Array<{ url: string; pageNum: string; html: string; text: string }>>([]);
   const [bookFetchedTitle, setBookFetchedTitle] = useState("");
@@ -452,7 +453,7 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
         });
         if (error) throw error;
         toast.success(`${bookPages.length} صفحه به‌صورت یک درس اضافه شد`);
-      } else {
+      } else if (bookSaveMode === "perPage") {
         const rows = bookPages.filter(p => p.html).map((p, i) => ({
           course_id: courseId, book_id: bookId,
           title: `${bookLessonTitle.trim() || bookFetchedTitle || "صفحه"} — صفحه ${p.pageNum}`,
@@ -464,6 +465,26 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
           if (error) throw error;
         }
         toast.success(`${rows.length} درس اضافه شد`);
+      } else {
+        // smart AI-based chapter/lesson detection
+        const combinedHtml = bookPages
+          .filter(p => p.html)
+          .map(p => `<section class="dg-page" data-page="${p.pageNum}">${p.html}</section>`)
+          .join("\n");
+        const truncated = combinedHtml.slice(0, 190_000);
+        const { lessons: aiLessons } = await splitBookFn({ data: { text: truncated } });
+        if (!aiLessons?.length) throw new Error("هوش مصنوعی نتوانست فصل/درسی تشخیص دهد");
+        const rows = aiLessons.map((l: { title: string; original_text: string; translation: string; explanation: string }, i: number) => ({
+          course_id: courseId, book_id: bookId,
+          title: l.title || `درس ${i + 1}`,
+          original_text: l.original_text || "",
+          translation: l.translation || "",
+          explanation: l.explanation || "",
+          sort_order: base + i,
+        }));
+        const { error } = await supabase.from("lessons").insert(rows);
+        if (error) throw error;
+        toast.success(`${rows.length} درس با تشخیص هوشمند اضافه شد`);
       }
       onSaved(); setOpen(false); reset(); setBookStartUrl(""); setBookLessonTitle("");
     } catch (e) { toast.error(e instanceof Error ? e.message : "Error"); }
@@ -559,16 +580,26 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
                 </div>
                 <div className="space-y-2">
                   <Label>روش ذخیره</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant={bookSaveMode === "combined" ? "default" : "outline"} onClick={() => setBookSaveMode("combined")}>یک درس واحد</Button>
                     <Button type="button" size="sm" variant={bookSaveMode === "perPage" ? "default" : "outline"} onClick={() => setBookSaveMode("perPage")}>هر صفحه یک درس</Button>
+                    <Button type="button" size="sm" variant={bookSaveMode === "smart" ? "default" : "outline"} onClick={() => setBookSaveMode("smart")} className="gap-1"><Sparkles className="h-3 w-3" />تشخیص هوشمند فصل‌ها (AI)</Button>
                   </div>
                 </div>
               </div>
+              {bookSaveMode !== "smart" && (
               <div className="space-y-2">
                 <Label>{bookSaveMode === "combined" ? "عنوان درس" : "پیشوند عنوان دروس"}</Label>
                 <Input value={bookLessonTitle} onChange={e => setBookLessonTitle(e.target.value)} placeholder="متن کتاب" />
               </div>
+              )}
+              {bookSaveMode === "smart" && (
+                <p className="text-xs text-muted-foreground rounded-lg bg-primary/5 border border-primary/20 p-3">
+                  هوش مصنوعی متن کتاب را تحلیل کرده و به‌طور خودکار به فصل‌ها و دروس تقسیم می‌کند. عنوان، متن اصلی، ترجمه و توضیح هر درس استخراج می‌شود.
+                </p>
+              )}
+
+
 
               {bookPages.length === 0 ? (
                 <Button onClick={loadBookPages} disabled={loading || !bookStartUrl.trim()} className="w-full bg-hero text-primary-foreground gap-2">
