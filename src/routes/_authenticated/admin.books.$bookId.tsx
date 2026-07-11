@@ -452,7 +452,7 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
         });
         if (error) throw error;
         toast.success(`${bookPages.length} صفحه به‌صورت یک درس اضافه شد`);
-      } else {
+      } else if (bookSaveMode === "perPage") {
         const rows = bookPages.filter(p => p.html).map((p, i) => ({
           course_id: courseId, book_id: bookId,
           title: `${bookLessonTitle.trim() || bookFetchedTitle || "صفحه"} — صفحه ${p.pageNum}`,
@@ -464,6 +464,26 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
           if (error) throw error;
         }
         toast.success(`${rows.length} درس اضافه شد`);
+      } else {
+        // smart AI-based chapter/lesson detection
+        const combinedHtml = bookPages
+          .filter(p => p.html)
+          .map(p => `<section class="dg-page" data-page="${p.pageNum}">${p.html}</section>`)
+          .join("\n");
+        const truncated = combinedHtml.slice(0, 190_000);
+        const { lessons: aiLessons } = await splitBookFn({ data: { text: truncated } });
+        if (!aiLessons?.length) throw new Error("هوش مصنوعی نتوانست فصل/درسی تشخیص دهد");
+        const rows = aiLessons.map((l, i) => ({
+          course_id: courseId, book_id: bookId,
+          title: l.title || `درس ${i + 1}`,
+          original_text: l.original_text || "",
+          translation: l.translation || "",
+          explanation: l.explanation || "",
+          sort_order: base + i,
+        }));
+        const { error } = await supabase.from("lessons").insert(rows);
+        if (error) throw error;
+        toast.success(`${rows.length} درس با تشخیص هوشمند اضافه شد`);
       }
       onSaved(); setOpen(false); reset(); setBookStartUrl(""); setBookLessonTitle("");
     } catch (e) { toast.error(e instanceof Error ? e.message : "Error"); }
