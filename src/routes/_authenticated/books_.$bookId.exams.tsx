@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { ChevronLeft, Upload, Trash2, Sparkles, FileText, Loader2, Eye, ImageIcon } from "lucide-react";
 import { answerBookExamFromFiles, generateBookExamQuestions } from "@/lib/exam.functions";
 
-export const Route = createFileRoute("/_authenticated/books/$bookId/exams")({
+export const Route = createFileRoute("/_authenticated/books_/$bookId/exams")({
   component: ExamsPage,
 });
 
