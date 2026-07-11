@@ -598,11 +598,8 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
                   هوش مصنوعی متن کتاب را تحلیل کرده و به‌طور خودکار به فصل‌ها و دروس تقسیم می‌کند. عنوان، متن اصلی، ترجمه و توضیح هر درس استخراج می‌شود.
                 </p>
               )}
-              </div>
-              <div className="space-y-2">
-                <Label>{bookSaveMode === "combined" ? "عنوان درس" : "پیشوند عنوان دروس"}</Label>
-                <Input value={bookLessonTitle} onChange={e => setBookLessonTitle(e.target.value)} placeholder="متن کتاب" />
-              </div>
+
+
 
               {bookPages.length === 0 ? (
                 <Button onClick={loadBookPages} disabled={loading || !bookStartUrl.trim()} className="w-full bg-hero text-primary-foreground gap-2">
