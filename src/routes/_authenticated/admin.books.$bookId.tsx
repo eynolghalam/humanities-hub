@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { splitBookIntoLessons } from "@/lib/book-import.functions";
+import { splitBookIntoLessons, detectBookChapterBoundaries } from "@/lib/book-import.functions";
 import { translateLessonText } from "@/lib/exam.functions";
 import { fetchDarsgoftarSession, listDarsgoftarSessions, importDarsgoftarBook, fetchDarsgoftarBookPages } from "@/lib/darsgoftar.functions";
 import { Button } from "@/components/ui/button";
