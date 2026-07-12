@@ -96,3 +96,88 @@ Return ONLY valid JSON matching the provided schema. Do not invent content; use 
     const lessons = z.array(LessonSchema).parse(parsed.lessons);
     return { lessons };
   });
+
+const BoundarySchema = z.object({
+  title: z.string(),
+  start_marker: z.string().min(4),
+});
+
+export const detectBookChapterBoundaries = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ text: z.string().min(20).max(400_000) }))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const roles = (roleRows ?? []).map(r => r.role as string);
+    if (!roles.includes("admin") && !roles.includes("teacher")) {
+      throw new Error("Unauthorized");
+    }
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
+
+    // Strip HTML tags for the AI to reduce noise; markers will be matched
+    // against the plain-text version of the source.
+    const plain = data.text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    const truncated = plain.slice(0, 180_000);
+
+    const system = `You are an expert at parsing Arabic/Persian religious/educational book text and identifying chapter/lesson boundaries (فصل / باب / درس).
+Return an ORDERED list of chapter/lesson boundaries found in the provided text.
+For EACH boundary return:
+- title: concise chapter/lesson title in the source language.
+- start_marker: a VERBATIM contiguous snippet of 40-120 characters copied EXACTLY from the source text, marking where this chapter begins (typically the heading line + first words). It MUST appear verbatim in the input so it can be located by exact string match. Do NOT paraphrase, translate, or add ellipsis.
+Rules:
+- Include every chapter, in the order they appear.
+- Do not invent chapters. If the text has no clear chapters, return a single boundary at the very start.`;
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: truncated },
+        ],
+        tools: [{
+          type: "function",
+          function: {
+            name: "save_boundaries",
+            description: "Save detected chapter boundaries",
+            parameters: {
+              type: "object",
+              properties: {
+                boundaries: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      title: { type: "string" },
+                      start_marker: { type: "string" },
+                    },
+                    required: ["title", "start_marker"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["boundaries"],
+              additionalProperties: false,
+            },
+          },
+        }],
+        tool_choice: { type: "function", function: { name: "save_boundaries" } },
+      }),
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      if (res.status === 429) throw new Error("Rate limit exceeded. Try again shortly.");
+      if (res.status === 402) throw new Error("AI credits required. Add credits in Settings.");
+      throw new Error(`AI error: ${res.status} ${txt}`);
+    }
+    const json = await res.json();
+    const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    if (!args) throw new Error("No structured output from AI");
+    const parsed = JSON.parse(args);
+    const boundaries = z.array(BoundarySchema).parse(parsed.boundaries);
+    return { boundaries };
+  });
