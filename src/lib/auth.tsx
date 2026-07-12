@@ -24,6 +24,7 @@ async function fetchRole(userId: string): Promise<Role | null> {
     .eq("user_id", userId);
   if (!data || data.length === 0) return null;
   const roles = data.map(r => r.role as Role);
+  if (roles.includes("owner")) return "owner";
   if (roles.includes("admin")) return "admin";
   if (roles.includes("teacher")) return "teacher";
   return "student";
