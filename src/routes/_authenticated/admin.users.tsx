@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/admin/users")({
   component: UsersPage,
 });
 
-type Role = "admin" | "teacher" | "student";
+type Role = "owner" | "admin" | "teacher" | "student";
 
 interface ProfileRow { id: string; full_name: string | null; pending_teacher: boolean }
 interface RoleRow { user_id: string; role: Role }
