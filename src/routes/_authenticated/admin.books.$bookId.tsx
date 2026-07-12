@@ -467,22 +467,81 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
         }
         toast.success(`${rows.length} درس اضافه شد`);
       } else {
-        // smart AI-based chapter/lesson detection
-        const combinedHtml = bookPages
-          .filter(p => p.html)
+        // smart AI-based chapter detection: AI returns only chapter boundary
+        // markers; we slice the full book text between markers so every page
+        // in a chapter is included in that lesson's original_text.
+        const pagesWithHtml = bookPages.filter(p => p.html);
+        if (!pagesWithHtml.length) throw new Error("متنی برای پردازش وجود ندارد");
+        const combinedHtml = pagesWithHtml
           .map(p => `<section class="dg-page" data-page="${p.pageNum}">${p.html}</section>`)
           .join("\n");
-        const truncated = combinedHtml.slice(0, 190_000);
-        const { lessons: aiLessons } = await splitBookFn({ data: { text: truncated } });
-        if (!aiLessons?.length) throw new Error("هوش مصنوعی نتوانست فصل/درسی تشخیص دهد");
-        const rows = aiLessons.map((l: { title: string; original_text: string; translation: string; explanation: string }, i: number) => ({
-          course_id: courseId, book_id: bookId,
-          title: l.title || `درس ${i + 1}`,
-          original_text: l.original_text || "",
-          translation: l.translation || "",
-          explanation: l.explanation || "",
-          sort_order: base + i,
-        }));
+        // Build a plain-text version aligned with what we send to the AI so
+        // markers returned by the AI can be located by exact substring match.
+        const plainText = combinedHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        const { boundaries } = await detectBoundariesFn({ data: { text: combinedHtml } });
+        if (!boundaries?.length) throw new Error("هوش مصنوعی نتوانست فصل/درسی تشخیص دهد");
+
+        // Locate each marker's position in plainText. Search sequentially so
+        // later chapters don't match earlier occurrences.
+        const norm = (s: string) => s.replace(/\s+/g, " ").trim();
+        type Loc = { title: string; start: number };
+        const locs: Loc[] = [];
+        let cursor = 0;
+        for (const b of boundaries) {
+          const marker = norm(b.start_marker);
+          let idx = -1;
+          if (marker.length >= 8) idx = plainText.indexOf(marker, cursor);
+          if (idx === -1) {
+            // fallback: try a shorter prefix of the marker
+            const shorter = marker.slice(0, Math.min(marker.length, 40));
+            if (shorter.length >= 8) idx = plainText.indexOf(shorter, cursor);
+          }
+          if (idx === -1) continue; // skip unmatched boundary
+          locs.push({ title: b.title, start: idx });
+          cursor = idx + 1;
+        }
+        if (!locs.length) throw new Error("مکان فصل‌ها در متن یافت نشد");
+        // ensure first slice starts at 0 (any preface goes to first lesson)
+        locs[0].start = 0;
+
+        // Now map plain-text offsets back to page indices so we can slice the
+        // HTML by whole pages (a chapter includes its start page and every
+        // following page up to but excluding the next chapter's start page).
+        const pagePlainStarts: number[] = [];
+        {
+          let acc = 0;
+          for (const p of pagesWithHtml) {
+            pagePlainStarts.push(acc);
+            const pt = p.html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+            // +1 for the space join between pages after normalization
+            acc += pt.length + 1;
+          }
+        }
+        const pageIndexForOffset = (off: number) => {
+          let lo = 0, hi = pagePlainStarts.length - 1, ans = 0;
+          while (lo <= hi) {
+            const mid = (lo + hi) >> 1;
+            if (pagePlainStarts[mid] <= off) { ans = mid; lo = mid + 1; } else { hi = mid - 1; }
+          }
+          return ans;
+        };
+
+        const rows = locs.map((loc, i) => {
+          const startPage = pageIndexForOffset(loc.start);
+          const endPage = i + 1 < locs.length ? pageIndexForOffset(locs[i + 1].start) : pagesWithHtml.length;
+          const slice = pagesWithHtml.slice(startPage, Math.max(endPage, startPage + 1));
+          const html = slice
+            .map(p => `<section class="dg-page" data-page="${p.pageNum}">${p.html}</section>`)
+            .join("\n");
+          return {
+            course_id: courseId, book_id: bookId,
+            title: loc.title || `درس ${i + 1}`,
+            original_text: html,
+            translation: "",
+            explanation: "",
+            sort_order: base + i,
+          };
+        });
         const { error } = await supabase.from("lessons").insert(rows);
         if (error) throw error;
         toast.success(`${rows.length} درس با تشخیص هوشمند اضافه شد`);
