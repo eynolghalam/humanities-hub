@@ -28,7 +28,7 @@ interface ProfileRow { id: string; full_name: string | null; pending_teacher: bo
 interface RoleRow { user_id: string; role: Role }
 
 function UsersPage() {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, isOwner, loading } = useAuth();
   const { t, dir } = useI18n();
   const navigate = useNavigate();
   const qc = useQueryClient();
