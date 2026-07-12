@@ -45,10 +45,12 @@ function UsersPage() {
         supabase.from("user_roles").select("user_id,role"),
       ]);
       const roleMap = new Map<string, Role>();
-      (roles ?? []).forEach((r: RoleRow) => {
+      (roles ?? []).forEach((r) => {
+        const role = r.role as Role;
         const cur = roleMap.get(r.user_id);
-        if (!cur || (r.role === "admin") || (r.role === "teacher" && cur === "student")) {
-          roleMap.set(r.user_id, r.role);
+        const rank = (x: Role) => x === "owner" ? 4 : x === "admin" ? 3 : x === "teacher" ? 2 : 1;
+        if (!cur || rank(role) > rank(cur)) {
+          roleMap.set(r.user_id, role);
         }
       });
       return (profs ?? []).map((p: ProfileRow) => ({
