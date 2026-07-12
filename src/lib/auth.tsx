@@ -2,16 +2,18 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Role = "admin" | "teacher" | "student";
+export type Role = "owner" | "admin" | "teacher" | "student";
 
 interface AuthState {
   user: User | null;
   role: Role | null;
+  isOwner: boolean;
   isAdmin: boolean;
   isTeacher: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
 }
+
 
 const AuthContext = createContext<AuthState | null>(null);
 
