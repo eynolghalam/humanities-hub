@@ -14,19 +14,21 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ChevronLeft, GraduationCap, Shield, User as UserIcon, Settings2, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, GraduationCap, Shield, User as UserIcon, Settings2, CheckCircle2, Crown, Zap, Heart } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
   component: UsersPage,
 });
 
-type Role = "admin" | "teacher" | "student";
+type Role = "owner" | "admin" | "teacher" | "student";
 
 interface ProfileRow { id: string; full_name: string | null; pending_teacher: boolean }
 interface RoleRow { user_id: string; role: Role }
 
 function UsersPage() {
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, isOwner, loading } = useAuth();
   const { t, dir } = useI18n();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -43,10 +45,12 @@ function UsersPage() {
         supabase.from("user_roles").select("user_id,role"),
       ]);
       const roleMap = new Map<string, Role>();
-      (roles ?? []).forEach((r: RoleRow) => {
+      (roles ?? []).forEach((r) => {
+        const role = r.role as Role;
         const cur = roleMap.get(r.user_id);
-        if (!cur || (r.role === "admin") || (r.role === "teacher" && cur === "student")) {
-          roleMap.set(r.user_id, r.role);
+        const rank = (x: Role) => x === "owner" ? 4 : x === "admin" ? 3 : x === "teacher" ? 2 : 1;
+        if (!cur || rank(role) > rank(cur)) {
+          roleMap.set(r.user_id, role);
         }
       });
       return (profs ?? []).map((p: ProfileRow) => ({
@@ -132,6 +136,7 @@ function UsersPage() {
         <div className="space-y-2">
           {others.map(u => (
             <UserRow key={u.id} userId={u.id} fullName={u.full_name} role={u.role}
+              isOwner={isOwner}
               onRoleChange={changeRole} onRevoke={() => revoke(u.id)} />
           ))}
         </div>
@@ -140,34 +145,41 @@ function UsersPage() {
   );
 }
 
-function UserRow({ userId, fullName, role, onRoleChange, onRevoke }: {
-  userId: string; fullName: string | null; role: Role;
+function UserRow({ userId, fullName, role, isOwner, onRoleChange, onRevoke }: {
+  userId: string; fullName: string | null; role: Role; isOwner: boolean;
   onRoleChange: (id: string, r: Role) => void; onRevoke: () => void;
 }) {
   const { t } = useI18n();
-  const Icon = role === "admin" ? Shield : role === "teacher" ? GraduationCap : UserIcon;
+  const Icon = role === "owner" ? Crown : role === "admin" ? Shield : role === "teacher" ? GraduationCap : UserIcon;
+  const roleLabel = role === "owner" ? "مالک" : role === "admin" ? t("adminRole") : role === "teacher" ? t("teacherRole") : t("studentRole");
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-          <Icon className="h-5 w-5 text-primary" />
+          <Icon className={`h-5 w-5 ${role === "owner" ? "text-amber-500" : "text-primary"}`} />
         </div>
         <div>
           <div className="font-semibold">{fullName || "—"}</div>
-          <Badge variant="secondary" className="mt-1 text-xs">
-            {role === "admin" ? t("adminRole") : role === "teacher" ? t("teacherRole") : t("studentRole")}
-          </Badge>
+          <Badge variant="secondary" className="mt-1 text-xs">{roleLabel}</Badge>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={role} onValueChange={(v) => onRoleChange(userId, v as Role)}>
+        <Select value={role} onValueChange={(v) => onRoleChange(userId, v as Role)} disabled={role === "owner" && !isOwner}>
           <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="student">{t("studentRole")}</SelectItem>
             <SelectItem value="teacher">{t("teacherRole")}</SelectItem>
             <SelectItem value="admin">{t("adminRole")}</SelectItem>
+            {isOwner && <SelectItem value="owner">مالک</SelectItem>}
           </SelectContent>
         </Select>
+        {isOwner && (
+          <StatsDialog userId={userId} fullName={fullName}>
+            <Button variant="outline" size="sm" className="gap-1">
+              <Zap className="h-4 w-4 text-amber-500" />امتیاز و قلب
+            </Button>
+          </StatsDialog>
+        )}
         {role === "teacher" && (
           <>
             <AccessDialog teacherId={userId} kind="course">
@@ -183,6 +195,82 @@ function UserRow({ userId, fullName, role, onRoleChange, onRevoke }: {
     </div>
   );
 }
+
+function StatsDialog({ userId, fullName, children }: { userId: string; fullName: string | null; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const [totalXp, setTotalXp] = useState<string>("");
+  const [weeklyXp, setWeeklyXp] = useState<string>("");
+  const [hearts, setHearts] = useState<string>("");
+  const [currentStreak, setCurrentStreak] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const { data } = await supabase.from("user_stats").select("*").eq("user_id", userId).maybeSingle();
+      if (data) {
+        setTotalXp(String(data.total_xp ?? 0));
+        setWeeklyXp(String(data.weekly_xp ?? 0));
+        setHearts(String(data.hearts ?? 5));
+        setCurrentStreak(String(data.current_streak ?? 0));
+      } else {
+        setTotalXp("0"); setWeeklyXp("0"); setHearts("5"); setCurrentStreak("0");
+      }
+    })();
+  }, [open, userId]);
+
+  const save = async () => {
+    setLoading(true);
+    const payload = {
+      user_id: userId,
+      total_xp: Math.max(0, parseInt(totalXp || "0", 10) || 0),
+      weekly_xp: Math.max(0, parseInt(weeklyXp || "0", 10) || 0),
+      hearts: Math.max(0, Math.min(5, parseInt(hearts || "0", 10) || 0)),
+      current_streak: Math.max(0, parseInt(currentStreak || "0", 10) || 0),
+    };
+    const { data: existing } = await supabase.from("user_stats").select("user_id").eq("user_id", userId).maybeSingle();
+    const { error } = existing
+      ? await supabase.from("user_stats").update(payload).eq("user_id", userId)
+      : await supabase.from("user_stats").insert(payload);
+    setLoading(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("ذخیره شد");
+    qc.invalidateQueries({ queryKey: ["user-stats"] });
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>ویرایش امتیاز و قلب — {fullName || "کاربر"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label className="flex items-center gap-1"><Zap className="h-4 w-4 text-amber-500" />مجموع امتیاز (XP)</Label>
+            <Input type="number" min={0} value={totalXp} onChange={e => setTotalXp(e.target.value)} />
+          </div>
+          <div>
+            <Label className="flex items-center gap-1"><Zap className="h-4 w-4 text-amber-500" />امتیاز این هفته</Label>
+            <Input type="number" min={0} value={weeklyXp} onChange={e => setWeeklyXp(e.target.value)} />
+          </div>
+          <div>
+            <Label className="flex items-center gap-1"><Heart className="h-4 w-4 text-rose-500" />قلب (۰ تا ۵)</Label>
+            <Input type="number" min={0} max={5} value={hearts} onChange={e => setHearts(e.target.value)} />
+          </div>
+          <div>
+            <Label>روزهای متوالی فعالیت</Label>
+            <Input type="number" min={0} value={currentStreak} onChange={e => setCurrentStreak(e.target.value)} />
+          </div>
+          <Button onClick={save} disabled={loading} className="w-full">ذخیره</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 function AccessDialog({ teacherId, kind, children }: { teacherId: string; kind: "course" | "book"; children: React.ReactNode }) {
   const { t } = useI18n();

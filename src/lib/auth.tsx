@@ -2,16 +2,18 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Role = "admin" | "teacher" | "student";
+export type Role = "owner" | "admin" | "teacher" | "student";
 
 interface AuthState {
   user: User | null;
   role: Role | null;
+  isOwner: boolean;
   isAdmin: boolean;
   isTeacher: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
 }
+
 
 const AuthContext = createContext<AuthState | null>(null);
 
@@ -22,6 +24,7 @@ async function fetchRole(userId: string): Promise<Role | null> {
     .eq("user_id", userId);
   if (!data || data.length === 0) return null;
   const roles = data.map(r => r.role as Role);
+  if (roles.includes("owner")) return "owner";
   if (roles.includes("admin")) return "admin";
   if (roles.includes("teacher")) return "teacher";
   return "student";
@@ -63,7 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       user,
       role,
-      isAdmin: role === "admin",
+      isOwner: role === "owner",
+      isAdmin: role === "admin" || role === "owner",
       isTeacher: role === "teacher",
       loading,
       signOut,
