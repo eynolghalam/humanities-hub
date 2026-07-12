@@ -14,7 +14,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ChevronLeft, GraduationCap, Shield, User as UserIcon, Settings2, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, GraduationCap, Shield, User as UserIcon, Settings2, CheckCircle2, Crown, Zap, Heart } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
   component: UsersPage,
