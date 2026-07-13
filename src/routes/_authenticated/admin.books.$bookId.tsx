@@ -83,6 +83,7 @@ function ManageLessons() {
             <Link to="/books/$bookId/exams" params={{ bookId }}>
               <Button variant="outline" className="gap-2"><FileQuestion className="h-4 w-4" />سوالات امتحانی</Button>
             </Link>
+            <TranslateBookButton bookId={bookId} onDone={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })} />
             <ImportFromTextDialog bookId={bookId} courseId={courseId} existingCount={lessons?.length ?? 0} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
               <Button variant="outline" className="gap-2"><Sparkles className="h-4 w-4" />{t("importFromText")}</Button>
             </ImportFromTextDialog>
