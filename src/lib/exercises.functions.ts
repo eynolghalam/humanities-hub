@@ -224,7 +224,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     const newWeeklyXP = stats.weekly_xp + xp;
     const league = newTotalXP >= 5000 ? "diamond" : newTotalXP >= 2000 ? "gold" : newTotalXP >= 500 ? "silver" : "bronze";
 
-    await supabase.from("user_stats").update({
+    await supabaseAdmin.from("user_stats").update({
       total_xp: newTotalXP,
       weekly_xp: newWeeklyXP,
       current_streak: newStreak,
