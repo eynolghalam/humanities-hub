@@ -58,6 +58,146 @@ export const translateLessonText = createServerFn({ method: "POST" })
     return { translation: String(translated).trim() };
   });
 
+/* ---------- Translate ALL lessons of a book at once ---------- */
+export const translateBook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({
+    bookId: z.string().uuid(),
+    targetLang: z.string().default("fa"),
+    overwrite: z.boolean().default(false),
+  }))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await requireStaff(supabase, userId);
+
+    const { data: lessons, error } = await supabase
+      .from("lessons")
+      .select("id,title,original_text,translation")
+      .eq("book_id", data.bookId)
+      .order("sort_order");
+    if (error) throw new Error(error.message);
+    if (!lessons || lessons.length === 0) throw new Error("درسی برای ترجمه یافت نشد.");
+
+    const targetName = data.targetLang === "ar" ? "عربی" : data.targetLang === "en" ? "انگلیسی" : "فارسی";
+    const system = `تو یک مترجم متخصص علوم حوزوی/دینی هستی. متن ورودی را به زبان ${targetName} ترجمه کن.
+قوانین:
+- اگر متن شامل تگ‌های HTML است، ساختار HTML را دقیقاً حفظ کن و فقط متن داخل تگ‌ها را ترجمه کن.
+- محتوای داخل <script>, <style>, و کدها را ترجمه نکن.
+- ترجمه طبیعی، روان و متناسب با ادبیات حوزوی باشد.
+- فقط متن ترجمه‌شده را برگردان بدون هیچ توضیح اضافه.`;
+
+    let translated = 0;
+    let skipped = 0;
+    for (const l of lessons) {
+      const src = (l.original_text ?? "").trim();
+      if (!src) { skipped++; continue; }
+      if (!data.overwrite && (l.translation ?? "").trim()) { skipped++; continue; }
+      try {
+        const json = await callAI({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: src.slice(0, 50_000) },
+          ],
+        });
+        const out = String(json.choices?.[0]?.message?.content ?? "").trim();
+        if (!out) { skipped++; continue; }
+        const { error: uerr } = await supabase.from("lessons").update({ translation: out }).eq("id", l.id);
+        if (uerr) throw new Error(uerr.message);
+        translated++;
+      } catch (e) {
+        // If AI credit / rate limits hit, stop and report progress
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes("اعتبار") || msg.includes("محدودیت")) {
+          return { translated, skipped, total: lessons.length, stopped: true, reason: msg };
+        }
+        skipped++;
+      }
+    }
+    return { translated, skipped, total: lessons.length, stopped: false };
+  });
+
+/* ---------- Owner-only: get a magic-link to sign in as any user ---------- */
+export const impersonateUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({
+    targetUserId: z.string().uuid(),
+    redirectPath: z.string().default("/courses"),
+  }))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    // Only owners may impersonate — verified via the same RLS-backed function used in policies.
+    const { data: isOwner } = await supabase.rpc("has_role", { _user_id: userId, _role: "owner" });
+    if (!isOwner) throw new Error("Forbidden");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: target, error: gerr } = await supabaseAdmin.auth.admin.getUserById(data.targetUserId);
+    if (gerr || !target?.user?.email) throw new Error("کاربر هدف یافت نشد یا ایمیل ندارد.");
+
+    const origin = process.env.SITE_URL
+      ?? process.env.PUBLIC_SITE_URL
+      ?? "";
+    const redirectTo = origin ? `${origin}${data.redirectPath}` : undefined;
+
+    const { data: link, error: lerr } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: target.user.email,
+      options: redirectTo ? { redirectTo } : undefined,
+    });
+    if (lerr || !link?.properties?.action_link) throw new Error(lerr?.message ?? "خطا در ساخت لینک ورود.");
+    return { actionLink: link.properties.action_link, targetEmail: target.user.email };
+  });
+
+/* ---------- Admin/Owner: aggregate progress for all students ---------- */
+export const listAllUsersProgress = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const roles = (roleRows ?? []).map(r => r.role as string);
+    if (!roles.includes("admin") && !roles.includes("owner")) {
+      throw new Error("دسترسی غیرمجاز.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [{ data: profiles }, { data: stats }, { data: progress }, { data: allRoles }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id,full_name,created_at"),
+      supabaseAdmin.from("user_stats").select("user_id,total_xp,weekly_xp,current_streak,longest_streak,hearts,league,last_activity_date"),
+      supabaseAdmin.from("user_lesson_progress").select("user_id,status"),
+      supabaseAdmin.from("user_roles").select("user_id,role"),
+    ]);
+
+    const statsMap = new Map((stats ?? []).map(s => [s.user_id, s]));
+    const completedMap = new Map<string, number>();
+    (progress ?? []).forEach(p => {
+      if (p.status === "completed") completedMap.set(p.user_id, (completedMap.get(p.user_id) ?? 0) + 1);
+    });
+    const roleMap = new Map<string, string>();
+    (allRoles ?? []).forEach(r => {
+      const rank = (x: string) => x === "owner" ? 4 : x === "admin" ? 3 : x === "teacher" ? 2 : 1;
+      const cur = roleMap.get(r.user_id);
+      if (!cur || rank(r.role as string) > rank(cur)) roleMap.set(r.user_id, r.role as string);
+    });
+
+    return (profiles ?? []).map(p => {
+      const s = statsMap.get(p.id);
+      return {
+        id: p.id,
+        full_name: p.full_name,
+        role: (roleMap.get(p.id) ?? "student"),
+        total_xp: s?.total_xp ?? 0,
+        weekly_xp: s?.weekly_xp ?? 0,
+        current_streak: s?.current_streak ?? 0,
+        longest_streak: s?.longest_streak ?? 0,
+        hearts: s?.hearts ?? 5,
+        league: s?.league ?? "bronze",
+        last_activity_date: s?.last_activity_date ?? null,
+        completed_lessons: completedMap.get(p.id) ?? 0,
+        created_at: p.created_at,
+      };
+    }).sort((a, b) => b.total_xp - a.total_xp);
+  });
+
 /* ---------- Generate 40 non-duplicate important questions from book ---------- */
 export const generateBookExamQuestions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
