@@ -255,7 +255,6 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     }
 
     if (lessonCompleted) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: prog } = await supabaseAdmin
         .from("user_lesson_progress").select("*").eq("user_id", userId).eq("lesson_id", ex.lesson_id).maybeSingle();
       if (!prog || prog.status !== "completed") {
@@ -267,7 +266,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
           xp_earned: (prog?.xp_earned ?? 0) + bonusXP,
           completed_at: new Date().toISOString(),
         }, { onConflict: "user_id,lesson_id" });
-        await supabase.from("user_stats").update({ total_xp: newTotalXP + bonusXP, weekly_xp: newWeeklyXP + bonusXP }).eq("user_id", userId);
+        await supabaseAdmin.from("user_stats").update({ total_xp: newTotalXP + bonusXP, weekly_xp: newWeeklyXP + bonusXP }).eq("user_id", userId);
       }
     }
 
@@ -280,7 +279,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     if (newTotalXP >= 1000) badges.push("xp_1000");
     if (newTotalXP >= 5000) badges.push("xp_5000");
     for (const b of badges) {
-      await supabase.from("user_achievements").insert({ user_id: userId, badge_key: b }).then(() => {}, () => {});
+      await supabaseAdmin.from("user_achievements").insert({ user_id: userId, badge_key: b }).then(() => {}, () => {});
     }
 
     return { ...grade, xp_awarded: xp, lesson_completed: lessonCompleted, hearts: newHearts, streak: newStreak, total_xp: newTotalXP };
