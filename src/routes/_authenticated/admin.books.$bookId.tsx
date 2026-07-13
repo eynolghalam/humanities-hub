@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { splitBookIntoLessons, detectBookChapterBoundaries } from "@/lib/book-import.functions";
-import { translateLessonText } from "@/lib/exam.functions";
+import { translateLessonText, translateBook } from "@/lib/exam.functions";
 import { fetchDarsgoftarSession, listDarsgoftarSessions, importDarsgoftarBook, fetchDarsgoftarBookPages } from "@/lib/darsgoftar.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
