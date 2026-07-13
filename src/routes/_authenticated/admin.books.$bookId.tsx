@@ -199,13 +199,13 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
           <div className="space-y-2"><Label>{t("originalText")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><Textarea rows={5} value={originalText} onChange={e => setOriginalText(e.target.value)} dir="ltr" /></div>
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <Label>{t("translation")}</Label>
+              <Label>{t("translation")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label>
               <Button type="button" size="sm" variant="outline" onClick={doTranslate} disabled={translating || !originalText.trim()} className="gap-1 h-8">
                 {translating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Languages className="h-3 w-3" />}
                 {translating ? "در حال ترجمه…" : "ترجمه با هوش مصنوعی"}
               </Button>
             </div>
-            <Textarea rows={5} value={translation} onChange={e => setTranslation(e.target.value)} />
+            <Textarea rows={5} value={translation} onChange={e => setTranslation(e.target.value)} dir="ltr" />
           </div>
           <div className="space-y-2"><Label>{t("explanation")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><Textarea rows={5} value={explanation} onChange={e => setExplanation(e.target.value)} dir="ltr" /></div>
           <div className="space-y-2"><Label>{t("content")}</Label><Textarea rows={6} value={content} onChange={e => setContent(e.target.value)} /></div>
