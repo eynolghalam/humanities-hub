@@ -176,11 +176,14 @@ function UserRow({ userId, fullName, role, isOwner, onRoleChange, onRevoke }: {
           </SelectContent>
         </Select>
         {isOwner && (
-          <StatsDialog userId={userId} fullName={fullName}>
-            <Button variant="outline" size="sm" className="gap-1">
-              <Zap className="h-4 w-4 text-amber-500" />امتیاز و قلب
-            </Button>
-          </StatsDialog>
+          <>
+            <StatsDialog userId={userId} fullName={fullName}>
+              <Button variant="outline" size="sm" className="gap-1">
+                <Zap className="h-4 w-4 text-amber-500" />امتیاز و قلب
+              </Button>
+            </StatsDialog>
+            <ImpersonateButton userId={userId} fullName={fullName} />
+          </>
         )}
         {role === "teacher" && (
           <>
