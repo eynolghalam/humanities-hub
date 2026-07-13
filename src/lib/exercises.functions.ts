@@ -290,14 +290,15 @@ export const getUserStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let { data: stats } = await supabase.from("user_stats").select("*").eq("user_id", userId).maybeSingle();
     if (!stats) {
-      const { data: created } = await supabase.from("user_stats").insert({ user_id: userId }).select("*").single();
+      const { data: created } = await supabaseAdmin.from("user_stats").insert({ user_id: userId }).select("*").single();
       stats = created;
     }
     // Refill hearts if needed
     if (stats && stats.hearts === 0 && stats.hearts_refill_at && new Date(stats.hearts_refill_at) <= new Date()) {
-      const { data: refilled } = await supabase.from("user_stats")
+      const { data: refilled } = await supabaseAdmin.from("user_stats")
         .update({ hearts: 5, hearts_refill_at: null }).eq("user_id", userId).select("*").single();
       if (refilled) stats = refilled;
     }
