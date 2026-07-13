@@ -699,3 +699,26 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
   );
 }
 
+function TranslateBookButton({ bookId, onDone }: { bookId: string; onDone: () => void }) {
+  const translateFn = useServerFn(translateBook);
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    const overwrite = confirm("ترجمه تمام درس‌های این کتاب با هوش مصنوعی. اگر می‌خواهید ترجمه‌های موجود بازنویسی شوند OK، در غیر این صورت Cancel (فقط درس‌های بدون ترجمه ترجمه می‌شوند).");
+    setBusy(true);
+    try {
+      const res = await translateFn({ data: { bookId, targetLang: "fa", overwrite } });
+      toast.success(`${res.translated} درس ترجمه شد${res.skipped ? ` — ${res.skipped} رد شد` : ""}${res.stopped ? ` (متوقف: ${res.reason ?? ""})` : ""}`);
+      onDone();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "خطا در ترجمه کتاب");
+    } finally { setBusy(false); }
+  };
+  return (
+    <Button variant="outline" className="gap-2" onClick={run} disabled={busy}>
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Languages className="h-4 w-4" />}
+      {busy ? "در حال ترجمه…" : "ترجمه کل کتاب (AI)"}
+    </Button>
+  );
+}
+
+
