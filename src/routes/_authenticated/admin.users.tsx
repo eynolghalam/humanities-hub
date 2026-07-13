@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { impersonateUser } from "@/lib/exam.functions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -14,7 +16,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ChevronLeft, GraduationCap, Shield, User as UserIcon, Settings2, CheckCircle2, Crown, Zap, Heart } from "lucide-react";
+import { ChevronLeft, GraduationCap, Shield, User as UserIcon, Settings2, CheckCircle2, Crown, Zap, Heart, LogIn } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -174,11 +176,14 @@ function UserRow({ userId, fullName, role, isOwner, onRoleChange, onRevoke }: {
           </SelectContent>
         </Select>
         {isOwner && (
-          <StatsDialog userId={userId} fullName={fullName}>
-            <Button variant="outline" size="sm" className="gap-1">
-              <Zap className="h-4 w-4 text-amber-500" />امتیاز و قلب
-            </Button>
-          </StatsDialog>
+          <>
+            <StatsDialog userId={userId} fullName={fullName}>
+              <Button variant="outline" size="sm" className="gap-1">
+                <Zap className="h-4 w-4 text-amber-500" />امتیاز و قلب
+              </Button>
+            </StatsDialog>
+            <ImpersonateButton userId={userId} fullName={fullName} />
+          </>
         )}
         {role === "teacher" && (
           <>
@@ -338,5 +343,28 @@ function AccessDialog({ teacherId, kind, children }: { teacherId: string; kind: 
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ImpersonateButton({ userId, fullName }: { userId: string; fullName: string | null }) {
+  const impersonateFn = useServerFn(impersonateUser);
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    if (!confirm(`ورود به حساب «${fullName || "کاربر"}»؟\n\nنشست فعلی شما (مالک) با نشست این کاربر جایگزین می‌شود. برای بازگشت باید دوباره وارد حساب خود شوید.`)) return;
+    setBusy(true);
+    try {
+      const res = await impersonateFn({ data: { targetUserId: userId, redirectPath: "/courses" } });
+      await supabase.auth.signOut();
+      window.location.href = res.actionLink;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "خطا در ورود به حساب");
+      setBusy(false);
+    }
+  };
+  return (
+    <Button variant="outline" size="sm" className="gap-1" onClick={run} disabled={busy}>
+      <LogIn className="h-4 w-4 text-primary" />
+      {busy ? "در حال ورود…" : "ورود به حساب"}
+    </Button>
   );
 }

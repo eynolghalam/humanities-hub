@@ -66,7 +66,7 @@ function LessonView() {
 
       {lesson.translation && (
         <Section icon={Languages} title={t("translation")}>
-          <div className="whitespace-pre-wrap text-foreground leading-loose">{lesson.translation}</div>
+          <div className="rich-content text-foreground leading-loose" dangerouslySetInnerHTML={{ __html: sanitizeContent(lesson.translation) }} />
         </Section>
       )}
 

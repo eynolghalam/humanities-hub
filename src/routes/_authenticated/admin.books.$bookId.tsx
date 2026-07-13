@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { splitBookIntoLessons, detectBookChapterBoundaries } from "@/lib/book-import.functions";
-import { translateLessonText } from "@/lib/exam.functions";
+import { translateLessonText, translateBook } from "@/lib/exam.functions";
 import { fetchDarsgoftarSession, listDarsgoftarSessions, importDarsgoftarBook, fetchDarsgoftarBookPages } from "@/lib/darsgoftar.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +83,7 @@ function ManageLessons() {
             <Link to="/books/$bookId/exams" params={{ bookId }}>
               <Button variant="outline" className="gap-2"><FileQuestion className="h-4 w-4" />سوالات امتحانی</Button>
             </Link>
+            <TranslateBookButton bookId={bookId} onDone={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })} />
             <ImportFromTextDialog bookId={bookId} courseId={courseId} existingCount={lessons?.length ?? 0} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
               <Button variant="outline" className="gap-2"><Sparkles className="h-4 w-4" />{t("importFromText")}</Button>
             </ImportFromTextDialog>
@@ -199,13 +200,13 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
           <div className="space-y-2"><Label>{t("originalText")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><Textarea rows={5} value={originalText} onChange={e => setOriginalText(e.target.value)} dir="ltr" /></div>
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <Label>{t("translation")}</Label>
+              <Label>{t("translation")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label>
               <Button type="button" size="sm" variant="outline" onClick={doTranslate} disabled={translating || !originalText.trim()} className="gap-1 h-8">
                 {translating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Languages className="h-3 w-3" />}
                 {translating ? "در حال ترجمه…" : "ترجمه با هوش مصنوعی"}
               </Button>
             </div>
-            <Textarea rows={5} value={translation} onChange={e => setTranslation(e.target.value)} />
+            <Textarea rows={5} value={translation} onChange={e => setTranslation(e.target.value)} dir="ltr" />
           </div>
           <div className="space-y-2"><Label>{t("explanation")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><Textarea rows={5} value={explanation} onChange={e => setExplanation(e.target.value)} dir="ltr" /></div>
           <div className="space-y-2"><Label>{t("content")}</Label><Textarea rows={6} value={content} onChange={e => setContent(e.target.value)} /></div>
@@ -697,4 +698,27 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
     </Dialog>
   );
 }
+
+function TranslateBookButton({ bookId, onDone }: { bookId: string; onDone: () => void }) {
+  const translateFn = useServerFn(translateBook);
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    const overwrite = confirm("ترجمه تمام درس‌های این کتاب با هوش مصنوعی. اگر می‌خواهید ترجمه‌های موجود بازنویسی شوند OK، در غیر این صورت Cancel (فقط درس‌های بدون ترجمه ترجمه می‌شوند).");
+    setBusy(true);
+    try {
+      const res = await translateFn({ data: { bookId, targetLang: "fa", overwrite } });
+      toast.success(`${res.translated} درس ترجمه شد${res.skipped ? ` — ${res.skipped} رد شد` : ""}${res.stopped ? ` (متوقف: ${res.reason ?? ""})` : ""}`);
+      onDone();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "خطا در ترجمه کتاب");
+    } finally { setBusy(false); }
+  };
+  return (
+    <Button variant="outline" className="gap-2" onClick={run} disabled={busy}>
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Languages className="h-4 w-4" />}
+      {busy ? "در حال ترجمه…" : "ترجمه کل کتاب (AI)"}
+    </Button>
+  );
+}
+
 

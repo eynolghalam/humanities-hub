@@ -23,6 +23,7 @@ import { Route as AuthenticatedLessonsLessonIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedCoursesCourseIdRouteImport } from './routes/_authenticated/courses.$courseId'
 import { Route as AuthenticatedBooksBookIdRouteImport } from './routes/_authenticated/books.$bookId'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
+import { Route as AuthenticatedAdminProgressRouteImport } from './routes/_authenticated/admin.progress'
 import { Route as AuthenticatedAdminHomepageRouteImport } from './routes/_authenticated/admin.homepage'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -105,6 +106,12 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminProgressRoute =
+  AuthenticatedAdminProgressRouteImport.update({
+    id: '/admin/progress',
+    path: '/admin/progress',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminHomepageRoute =
   AuthenticatedAdminHomepageRouteImport.update({
     id: '/admin/homepage',
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/homepage': typeof AuthenticatedAdminHomepageRoute
+  '/admin/progress': typeof AuthenticatedAdminProgressRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
@@ -173,6 +181,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/homepage': typeof AuthenticatedAdminHomepageRoute
+  '/admin/progress': typeof AuthenticatedAdminProgressRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
@@ -196,6 +205,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/homepage': typeof AuthenticatedAdminHomepageRoute
+  '/_authenticated/admin/progress': typeof AuthenticatedAdminProgressRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/books/$bookId': typeof AuthenticatedBooksBookIdRoute
   '/_authenticated/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/homepage'
+    | '/admin/progress'
     | '/admin/users'
     | '/books/$bookId'
     | '/courses/$courseId'
@@ -240,6 +251,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/homepage'
+    | '/admin/progress'
     | '/admin/users'
     | '/books/$bookId'
     | '/courses/$courseId'
@@ -262,6 +274,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/homepage'
+    | '/_authenticated/admin/progress'
     | '/_authenticated/admin/users'
     | '/_authenticated/books/$bookId'
     | '/_authenticated/courses/$courseId'
@@ -384,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/progress': {
+      id: '/_authenticated/admin/progress'
+      path: '/admin/progress'
+      fullPath: '/admin/progress'
+      preLoaderRoute: typeof AuthenticatedAdminProgressRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/homepage': {
       id: '/_authenticated/admin/homepage'
       path: '/admin/homepage'
@@ -433,6 +453,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedJourneyRoute: typeof AuthenticatedJourneyRoute
   AuthenticatedStatsRoute: typeof AuthenticatedStatsRoute
   AuthenticatedAdminHomepageRoute: typeof AuthenticatedAdminHomepageRoute
+  AuthenticatedAdminProgressRoute: typeof AuthenticatedAdminProgressRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedBooksBookIdRoute: typeof AuthenticatedBooksBookIdRoute
   AuthenticatedCoursesCourseIdRoute: typeof AuthenticatedCoursesCourseIdRoute
@@ -448,6 +469,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedJourneyRoute: AuthenticatedJourneyRoute,
   AuthenticatedStatsRoute: AuthenticatedStatsRoute,
   AuthenticatedAdminHomepageRoute: AuthenticatedAdminHomepageRoute,
+  AuthenticatedAdminProgressRoute: AuthenticatedAdminProgressRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedBooksBookIdRoute: AuthenticatedBooksBookIdRoute,
   AuthenticatedCoursesCourseIdRoute: AuthenticatedCoursesCourseIdRoute,
