@@ -345,3 +345,26 @@ function AccessDialog({ teacherId, kind, children }: { teacherId: string; kind: 
     </Dialog>
   );
 }
+
+function ImpersonateButton({ userId, fullName }: { userId: string; fullName: string | null }) {
+  const impersonateFn = useServerFn(impersonateUser);
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    if (!confirm(`ورود به حساب «${fullName || "کاربر"}»؟\n\nنشست فعلی شما (مالک) با نشست این کاربر جایگزین می‌شود. برای بازگشت باید دوباره وارد حساب خود شوید.`)) return;
+    setBusy(true);
+    try {
+      const res = await impersonateFn({ data: { targetUserId: userId, redirectPath: "/courses" } });
+      await supabase.auth.signOut();
+      window.location.href = res.actionLink;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "خطا در ورود به حساب");
+      setBusy(false);
+    }
+  };
+  return (
+    <Button variant="outline" size="sm" className="gap-1" onClick={run} disabled={busy}>
+      <LogIn className="h-4 w-4 text-primary" />
+      {busy ? "در حال ورود…" : "ورود به حساب"}
+    </Button>
+  );
+}
