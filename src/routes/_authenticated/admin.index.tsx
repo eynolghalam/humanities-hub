@@ -87,6 +87,11 @@ function AdminPanel() {
             </Link>
           )}
           {isAdmin && (
+            <Link to="/admin/progress">
+              <Button variant="outline" className="gap-2"><TrendingUp className="h-4 w-4" />پیشرفت طلاب</Button>
+            </Link>
+          )}
+          {isAdmin && (
             <CourseDialog onSaved={() => qc.invalidateQueries({ queryKey: ["mgmt-courses"] })}>
               <Button className="bg-hero text-primary-foreground gap-2"><Plus className="h-4 w-4" />{t("addCourse")}</Button>
             </CourseDialog>
