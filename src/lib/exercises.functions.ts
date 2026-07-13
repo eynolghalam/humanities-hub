@@ -132,12 +132,13 @@ export const gradeAnswer = createServerFn({ method: "POST" })
       .single();
     if (eerr || !ex) throw new Error("سوال یافت نشد");
 
-    // Ensure stats row exists; check hearts
-    const { data: existingStats } = await supabase
+    // Ensure stats row exists; check hearts (writes via admin — client cannot write user_stats)
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existingStats } = await supabaseAdmin
       .from("user_stats").select("*").eq("user_id", userId).maybeSingle();
     let stats = existingStats;
     if (!stats) {
-      const { data: created } = await supabase.from("user_stats").insert({ user_id: userId }).select("*").single();
+      const { data: created } = await supabaseAdmin.from("user_stats").insert({ user_id: userId }).select("*").single();
       stats = created;
     }
     if (!stats) throw new Error("خطا در ساخت آمار");
@@ -195,19 +196,16 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     const xp = grade.is_correct ? (grade.score >= 90 ? 15 : 10) : 0;
 
     // Record attempt via service role to prevent client-side XP/score forgery
-    {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await supabaseAdmin.from("user_exercise_attempts").insert({
-        user_id: userId,
-        exercise_id: ex.id,
-        user_answer: data.userAnswer,
-        is_correct: grade.is_correct,
-        score: Math.round(grade.score),
-        ai_feedback: grade.feedback,
-        correct_answer: grade.correct_answer,
-        xp_awarded: xp,
-      });
-    }
+    await supabaseAdmin.from("user_exercise_attempts").insert({
+      user_id: userId,
+      exercise_id: ex.id,
+      user_answer: data.userAnswer,
+      is_correct: grade.is_correct,
+      score: Math.round(grade.score),
+      ai_feedback: grade.feedback,
+      correct_answer: grade.correct_answer,
+      xp_awarded: xp,
+    });
 
     // Update stats: streak, hearts, xp, league
     const today = todayStr();
@@ -226,7 +224,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     const newWeeklyXP = stats.weekly_xp + xp;
     const league = newTotalXP >= 5000 ? "diamond" : newTotalXP >= 2000 ? "gold" : newTotalXP >= 500 ? "silver" : "bronze";
 
-    await supabase.from("user_stats").update({
+    await supabaseAdmin.from("user_stats").update({
       total_xp: newTotalXP,
       weekly_xp: newWeeklyXP,
       current_streak: newStreak,
@@ -257,7 +255,6 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     }
 
     if (lessonCompleted) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: prog } = await supabaseAdmin
         .from("user_lesson_progress").select("*").eq("user_id", userId).eq("lesson_id", ex.lesson_id).maybeSingle();
       if (!prog || prog.status !== "completed") {
@@ -269,7 +266,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
           xp_earned: (prog?.xp_earned ?? 0) + bonusXP,
           completed_at: new Date().toISOString(),
         }, { onConflict: "user_id,lesson_id" });
-        await supabase.from("user_stats").update({ total_xp: newTotalXP + bonusXP, weekly_xp: newWeeklyXP + bonusXP }).eq("user_id", userId);
+        await supabaseAdmin.from("user_stats").update({ total_xp: newTotalXP + bonusXP, weekly_xp: newWeeklyXP + bonusXP }).eq("user_id", userId);
       }
     }
 
@@ -282,7 +279,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     if (newTotalXP >= 1000) badges.push("xp_1000");
     if (newTotalXP >= 5000) badges.push("xp_5000");
     for (const b of badges) {
-      await supabase.from("user_achievements").insert({ user_id: userId, badge_key: b }).then(() => {}, () => {});
+      await supabaseAdmin.from("user_achievements").insert({ user_id: userId, badge_key: b }).then(() => {}, () => {});
     }
 
     return { ...grade, xp_awarded: xp, lesson_completed: lessonCompleted, hearts: newHearts, streak: newStreak, total_xp: newTotalXP };
@@ -293,14 +290,15 @@ export const getUserStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let { data: stats } = await supabase.from("user_stats").select("*").eq("user_id", userId).maybeSingle();
     if (!stats) {
-      const { data: created } = await supabase.from("user_stats").insert({ user_id: userId }).select("*").single();
+      const { data: created } = await supabaseAdmin.from("user_stats").insert({ user_id: userId }).select("*").single();
       stats = created;
     }
     // Refill hearts if needed
     if (stats && stats.hearts === 0 && stats.hearts_refill_at && new Date(stats.hearts_refill_at) <= new Date()) {
-      const { data: refilled } = await supabase.from("user_stats")
+      const { data: refilled } = await supabaseAdmin.from("user_stats")
         .update({ hearts: 5, hearts_refill_at: null }).eq("user_id", userId).select("*").single();
       if (refilled) stats = refilled;
     }
