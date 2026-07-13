@@ -132,12 +132,13 @@ export const gradeAnswer = createServerFn({ method: "POST" })
       .single();
     if (eerr || !ex) throw new Error("سوال یافت نشد");
 
-    // Ensure stats row exists; check hearts
-    const { data: existingStats } = await supabase
+    // Ensure stats row exists; check hearts (writes via admin — client cannot write user_stats)
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existingStats } = await supabaseAdmin
       .from("user_stats").select("*").eq("user_id", userId).maybeSingle();
     let stats = existingStats;
     if (!stats) {
-      const { data: created } = await supabase.from("user_stats").insert({ user_id: userId }).select("*").single();
+      const { data: created } = await supabaseAdmin.from("user_stats").insert({ user_id: userId }).select("*").single();
       stats = created;
     }
     if (!stats) throw new Error("خطا در ساخت آمار");
