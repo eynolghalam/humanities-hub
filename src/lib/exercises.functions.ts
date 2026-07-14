@@ -204,7 +204,8 @@ export const gradeAnswer = createServerFn({ method: "POST" })
         newStreak = last === yest ? stats.current_streak + 1 : 1;
       }
     }
-    const newHearts = grade.is_correct ? stats.hearts : Math.max(0, stats.hearts - 1);
+    // Hearts uncapped: grow on correct, never deplete on wrong.
+    const newHearts = grade.is_correct ? stats.hearts + 1 : stats.hearts;
     const newTotalXP = stats.total_xp + xp;
     const newWeeklyXP = stats.weekly_xp + xp;
     const league = newTotalXP >= 5000 ? "diamond" : newTotalXP >= 2000 ? "gold" : newTotalXP >= 500 ? "silver" : "bronze";
@@ -215,7 +216,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
       current_streak: newStreak,
       longest_streak: Math.max(stats.longest_streak, newStreak),
       hearts: newHearts,
-      hearts_refill_at: newHearts === 0 ? new Date(Date.now() + 3600_000).toISOString() : stats.hearts_refill_at,
+      hearts_refill_at: null,
       last_activity_date: grade.is_correct ? today : stats.last_activity_date,
       league,
     }).eq("user_id", userId);
