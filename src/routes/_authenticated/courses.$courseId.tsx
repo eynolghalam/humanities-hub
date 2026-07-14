@@ -6,6 +6,7 @@ import { ChevronLeft, BookOpen, Tag, Library } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CourseProgressBar } from "@/components/ProgressInline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   component: CourseDetail,
@@ -14,6 +15,11 @@ export const Route = createFileRoute("/_authenticated/courses/$courseId")({
 function CourseDetail() {
   const { courseId } = Route.useParams();
   const { t, dir } = useI18n();
+
+  const { data: allCourses } = useQuery({
+    queryKey: ["courses-nav"],
+    queryFn: async () => (await supabase.from("courses").select("id,title").order("sort_order")).data ?? [],
+  });
 
   const { data } = useQuery({
     queryKey: ["course", courseId],
@@ -63,12 +69,21 @@ function CourseDetail() {
 
   return (
     <div>
-      <Link to="/courses">
-        <Button variant="ghost" size="sm" className="mb-4 gap-1">
-          <ChevronLeft className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} />
-          {t("backToCourses")}
-        </Button>
-      </Link>
+      <BreadcrumbNav
+        items={[
+          {
+            label: data?.course?.title ?? t("loading"),
+            currentId: courseId,
+            siblings: (allCourses ?? []).map(c => ({
+              id: c.id,
+              label: c.title,
+              to: "/courses/$courseId",
+              params: { courseId: c.id },
+            })),
+          },
+        ]}
+      />
+
 
       {data?.course && (
         <div className="bg-card-soft mb-8 rounded-2xl border border-border p-8 shadow-soft">

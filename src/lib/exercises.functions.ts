@@ -2,23 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
-async function callAI(body: unknown) {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
-  const res = await fetch(AI_URL, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const txt = await res.text();
-    if (res.status === 429) throw new Error("محدودیت درخواست. لطفاً کمی بعد دوباره تلاش کنید.");
-    if (res.status === 402) throw new Error("اعتبار هوش مصنوعی تمام شده. لطفاً اعتبار اضافه کنید.");
-    throw new Error(`AI error: ${res.status} ${txt}`);
-  }
-  return res.json();
+async function callAI(body: any) {
+  const { callAIWithFallback } = await import("./ai-fallback.server");
+  return callAIWithFallback(body);
 }
 
 /* --------------------- Extract or generate exercises --------------------- */
@@ -143,9 +129,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
       stats = created;
     }
     if (!stats) throw new Error("خطا در ساخت آمار");
-    if (stats.hearts <= 0) {
-      throw new Error("قلب‌های شما تمام شده! ۱ ساعت صبر کنید یا با تکمیل تمرین‌های دیگر شارژ شوید.");
-    }
+    // Hearts have no cap — no ceiling and no depletion barrier.
 
     // Ask AI to grade. Treat user answer as untrusted opaque data.
     const safeAnswer = data.userAnswer.replace(/<\/?student_answer>/gi, "").slice(0, 5000);
@@ -220,7 +204,8 @@ export const gradeAnswer = createServerFn({ method: "POST" })
         newStreak = last === yest ? stats.current_streak + 1 : 1;
       }
     }
-    const newHearts = grade.is_correct ? stats.hearts : Math.max(0, stats.hearts - 1);
+    // Hearts uncapped: grow on correct, never deplete on wrong.
+    const newHearts = grade.is_correct ? stats.hearts + 1 : stats.hearts;
     const newTotalXP = stats.total_xp + xp;
     const newWeeklyXP = stats.weekly_xp + xp;
     const league = newTotalXP >= 5000 ? "diamond" : newTotalXP >= 2000 ? "gold" : newTotalXP >= 500 ? "silver" : "bronze";
@@ -231,7 +216,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
       current_streak: newStreak,
       longest_streak: Math.max(stats.longest_streak, newStreak),
       hearts: newHearts,
-      hearts_refill_at: newHearts === 0 ? new Date(Date.now() + 3600_000).toISOString() : stats.hearts_refill_at,
+      hearts_refill_at: null,
       last_activity_date: grade.is_correct ? today : stats.last_activity_date,
       league,
     }).eq("user_id", userId);
@@ -297,12 +282,7 @@ export const getUserStats = createServerFn({ method: "GET" })
       const { data: created } = await supabaseAdmin.from("user_stats").insert({ user_id: userId }).select("*").single();
       stats = created;
     }
-    // Refill hearts if needed
-    if (stats && stats.hearts === 0 && stats.hearts_refill_at && new Date(stats.hearts_refill_at) <= new Date()) {
-      const { data: refilled } = await supabaseAdmin.from("user_stats")
-        .update({ hearts: 5, hearts_refill_at: null }).eq("user_id", userId).select("*").single();
-      if (refilled) stats = refilled;
-    }
+    // Hearts uncapped — no refill logic needed.
     const { data: badges } = await supabase.from("user_achievements").select("badge_key,earned_at").eq("user_id", userId);
     return { stats, badges: badges ?? [] };
   });

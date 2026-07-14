@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
-import { ChevronLeft, GraduationCap, FileQuestion } from "lucide-react";
+import { ChevronLeft, GraduationCap, FileQuestion, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BookProgressBar } from "@/components/ProgressInline";
+import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
   component: BookDetail,
@@ -20,7 +21,7 @@ function BookDetail() {
       const { data: book } = await supabase.from("books").select("*").eq("id", bookId).single();
       const { data: lessons } = await supabase
         .from("lessons")
-        .select("id,title,sort_order")
+        .select("id,title,sort_order,translation")
         .eq("book_id", bookId)
         .order("sort_order", { ascending: true });
       return { book, lessons: lessons ?? [] };
@@ -29,15 +30,37 @@ function BookDetail() {
 
   const courseId = data?.book?.course_id;
 
+  const { data: course } = useQuery({
+    queryKey: ["course-nav", courseId],
+    queryFn: async () => (await supabase.from("courses").select("id,title").eq("id", courseId!).single()).data,
+    enabled: !!courseId,
+  });
+
+  const { data: siblingBooks } = useQuery({
+    queryKey: ["books-nav", courseId],
+    queryFn: async () =>
+      (await supabase.from("books").select("id,title").eq("course_id", courseId!).order("sort_order")).data ?? [],
+    enabled: !!courseId,
+  });
+
   return (
     <div>
-      {courseId && (
-        <Link to="/courses/$courseId" params={{ courseId }}>
-          <Button variant="ghost" size="sm" className="mb-4 gap-1">
-            <ChevronLeft className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} />
-            {t("backToCourse2")}
-          </Button>
-        </Link>
+      {courseId && course && (
+        <BreadcrumbNav
+          items={[
+            { label: course.title, to: "/courses/$courseId", params: { courseId } },
+            {
+              label: data?.book?.title ?? "…",
+              currentId: bookId,
+              siblings: (siblingBooks ?? []).map(b => ({
+                id: b.id,
+                label: b.title,
+                to: "/books/$bookId",
+                params: { bookId: b.id },
+              })),
+            },
+          ]}
+        />
       )}
 
       {data?.book && (
@@ -57,26 +80,37 @@ function BookDetail() {
         <div className="rounded-2xl border border-dashed p-12 text-center text-muted-foreground">{t("noLessons")}</div>
       )}
       <div className="space-y-3">
-        {data?.lessons.map((l, i) => (
-          <Link
-            key={l.id}
-            to="/lessons/$lessonId"
-            params={{ lessonId: l.id }}
-            className="group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition hover:border-primary hover:shadow-soft"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{i + 1}</div>
-              <div>
-                <div className="font-semibold">{l.title}</div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <GraduationCap className="h-3 w-3" />
-                  {t("lesson")}
+        {data?.lessons.map((l, i) => {
+          const translated = !!(l.translation ?? "").trim();
+          return (
+            <Link
+              key={l.id}
+              to="/lessons/$lessonId"
+              params={{ lessonId: l.id }}
+              className="group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition hover:border-primary hover:shadow-soft"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{i + 1}</div>
+                <div>
+                  <div className="flex items-center gap-2 font-semibold">
+                    {l.title}
+                    {translated && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <Languages className="h-3 w-3" />
+                        ترجمه شده
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <GraduationCap className="h-3 w-3" />
+                    {t("lesson")}
+                  </div>
                 </div>
               </div>
-            </div>
-            <ChevronLeft className={`h-5 w-5 text-muted-foreground group-hover:text-primary ${dir === "ltr" ? "rotate-180" : ""}`} />
-          </Link>
-        ))}
+              <ChevronLeft className={`h-5 w-5 text-muted-foreground group-hover:text-primary ${dir === "ltr" ? "rotate-180" : ""}`} />
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
