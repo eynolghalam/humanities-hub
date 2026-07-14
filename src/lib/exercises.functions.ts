@@ -125,7 +125,9 @@ export const gradeAnswer = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { data: ex, error: eerr } = await supabase
+    // expected_answer is column-restricted — fetch via admin client so students never read it via the Data API
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: ex, error: eerr } = await supabaseAdmin
       .from("lesson_exercises")
       .select("id,lesson_id,question,expected_answer,exercise_type,options")
       .eq("id", data.exerciseId)
@@ -133,7 +135,6 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     if (eerr || !ex) throw new Error("سوال یافت نشد");
 
     // Ensure stats row exists; check hearts (writes via admin — client cannot write user_stats)
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: existingStats } = await supabaseAdmin
       .from("user_stats").select("*").eq("user_id", userId).maybeSingle();
     let stats = existingStats;
