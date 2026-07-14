@@ -2,23 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
-async function callAI(body: unknown) {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
-  const res = await fetch(AI_URL, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const txt = await res.text();
-    if (res.status === 429) throw new Error("محدودیت درخواست. لطفاً کمی بعد دوباره تلاش کنید.");
-    if (res.status === 402) throw new Error("اعتبار هوش مصنوعی تمام شده. لطفاً اعتبار اضافه کنید.");
-    throw new Error(`AI error: ${res.status} ${txt}`);
-  }
-  return res.json();
+async function callAI(body: any) {
+  const { callAIWithFallback } = await import("./ai-fallback.server");
+  return callAIWithFallback(body);
 }
 
 /* --------------------- Extract or generate exercises --------------------- */
