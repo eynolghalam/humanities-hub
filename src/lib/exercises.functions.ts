@@ -129,9 +129,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
       stats = created;
     }
     if (!stats) throw new Error("خطا در ساخت آمار");
-    if (stats.hearts <= 0) {
-      throw new Error("قلب‌های شما تمام شده! ۱ ساعت صبر کنید یا با تکمیل تمرین‌های دیگر شارژ شوید.");
-    }
+    // Hearts have no cap — no ceiling and no depletion barrier.
 
     // Ask AI to grade. Treat user answer as untrusted opaque data.
     const safeAnswer = data.userAnswer.replace(/<\/?student_answer>/gi, "").slice(0, 5000);
