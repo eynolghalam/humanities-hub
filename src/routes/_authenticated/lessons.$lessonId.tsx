@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, FileText, Video, Music, Download, BookOpen, Languages, Lightbulb } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Video, Music, Download, BookOpen, Languages, Lightbulb } from "lucide-react";
 import { ExerciseSection } from "@/components/ExerciseSection";
+import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 
 const sanitizeContent = (html: string) => DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
 const sanitizeEmbed = (html: string) =>
