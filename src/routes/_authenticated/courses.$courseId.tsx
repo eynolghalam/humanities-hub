@@ -69,12 +69,21 @@ function CourseDetail() {
 
   return (
     <div>
-      <Link to="/courses">
-        <Button variant="ghost" size="sm" className="mb-4 gap-1">
-          <ChevronLeft className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} />
-          {t("backToCourses")}
-        </Button>
-      </Link>
+      <BreadcrumbNav
+        items={[
+          {
+            label: data?.course?.title ?? t("loading"),
+            currentId: courseId,
+            siblings: (allCourses ?? []).map(c => ({
+              id: c.id,
+              label: c.title,
+              to: "/courses/$courseId",
+              params: { courseId: c.id },
+            })),
+          },
+        ]}
+      />
+
 
       {data?.course && (
         <div className="bg-card-soft mb-8 rounded-2xl border border-border p-8 shadow-soft">
