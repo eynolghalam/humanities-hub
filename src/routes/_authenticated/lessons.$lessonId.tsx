@@ -148,9 +148,29 @@ function LessonView() {
       )}
 
       <ExerciseSection lessonId={lesson.id} />
+
+      <div className="mt-8 flex items-center justify-between gap-3">
+        {prev ? (
+          <Link to="/lessons/$lessonId" params={{ lessonId: prev.id }} className="flex-1">
+            <Button variant="outline" className="w-full justify-start gap-2">
+              <ChevronRight className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} />
+              <span className="truncate">درس قبل: {prev.title}</span>
+            </Button>
+          </Link>
+        ) : <div className="flex-1" />}
+        {next ? (
+          <Link to="/lessons/$lessonId" params={{ lessonId: next.id }} className="flex-1">
+            <Button variant="outline" className="w-full justify-end gap-2">
+              <span className="truncate">درس بعد: {next.title}</span>
+              <ChevronLeft className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} />
+            </Button>
+          </Link>
+        ) : <div className="flex-1" />}
+      </div>
     </div>
   );
 }
+
 
 function Section({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
   return (
