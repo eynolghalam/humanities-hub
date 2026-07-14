@@ -6,6 +6,7 @@ import { ChevronLeft, BookOpen, Tag, Library } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CourseProgressBar } from "@/components/ProgressInline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { BreadcrumbNav } from "@/components/BreadcrumbNav";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   component: CourseDetail,
@@ -14,6 +15,11 @@ export const Route = createFileRoute("/_authenticated/courses/$courseId")({
 function CourseDetail() {
   const { courseId } = Route.useParams();
   const { t, dir } = useI18n();
+
+  const { data: allCourses } = useQuery({
+    queryKey: ["courses-nav"],
+    queryFn: async () => (await supabase.from("courses").select("id,title").order("sort_order")).data ?? [],
+  });
 
   const { data } = useQuery({
     queryKey: ["course", courseId],
