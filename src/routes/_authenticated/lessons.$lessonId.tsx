@@ -46,16 +46,53 @@ function LessonView() {
     if (lesson?.slide_url) getSignedUrl("lesson-slides", lesson.slide_url).then(setSlideUrl);
   }, [lesson]);
 
+  const bookId = lesson?.book_id ?? null;
+  const { data: bookInfo } = useQuery({
+    queryKey: ["lesson-book-nav", bookId],
+    queryFn: async () => {
+      const { data: book } = await supabase.from("books").select("id,title,course_id").eq("id", bookId!).single();
+      const { data: siblings } = await supabase
+        .from("lessons")
+        .select("id,title,sort_order")
+        .eq("book_id", bookId!)
+        .order("sort_order");
+      const { data: course } = book?.course_id
+        ? await supabase.from("courses").select("id,title").eq("id", book.course_id).single()
+        : { data: null };
+      return { book, course, siblings: siblings ?? [] };
+    },
+    enabled: !!bookId,
+  });
+
+  const { prev, next } = useMemo(() => {
+    const list = bookInfo?.siblings ?? [];
+    const idx = list.findIndex(l => l.id === lesson?.id);
+    return { prev: idx > 0 ? list[idx - 1] : null, next: idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null };
+  }, [bookInfo, lesson]);
+
   if (!lesson) return <p className="text-muted-foreground">{t("loading")}</p>;
 
   return (
     <div className="mx-auto max-w-4xl">
-      <Link to="/courses/$courseId" params={{ courseId: lesson.course_id }}>
-        <Button variant="ghost" size="sm" className="mb-4 gap-1">
-          <ChevronLeft className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} />
-          {t("backToCourse")}
-        </Button>
-      </Link>
+      {bookInfo?.book && bookInfo.course && (
+        <BreadcrumbNav
+          items={[
+            { label: bookInfo.course.title, to: "/courses/$courseId", params: { courseId: bookInfo.course.id } },
+            { label: bookInfo.book.title, to: "/books/$bookId", params: { bookId: bookInfo.book.id } },
+            {
+              label: lesson.title,
+              currentId: lesson.id,
+              siblings: bookInfo.siblings.map(s => ({
+                id: s.id,
+                label: s.title,
+                to: "/lessons/$lessonId",
+                params: { lessonId: s.id },
+              })),
+            },
+          ]}
+        />
+      )}
+
 
       <h1 className="mb-8 text-3xl font-extrabold">{lesson.title}</h1>
 
