@@ -282,12 +282,7 @@ export const getUserStats = createServerFn({ method: "GET" })
       const { data: created } = await supabaseAdmin.from("user_stats").insert({ user_id: userId }).select("*").single();
       stats = created;
     }
-    // Refill hearts if needed
-    if (stats && stats.hearts === 0 && stats.hearts_refill_at && new Date(stats.hearts_refill_at) <= new Date()) {
-      const { data: refilled } = await supabaseAdmin.from("user_stats")
-        .update({ hearts: 5, hearts_refill_at: null }).eq("user_id", userId).select("*").single();
-      if (refilled) stats = refilled;
-    }
+    // Hearts uncapped — no refill logic needed.
     const { data: badges } = await supabase.from("user_achievements").select("badge_key,earned_at").eq("user_id", userId);
     return { stats, badges: badges ?? [] };
   });
