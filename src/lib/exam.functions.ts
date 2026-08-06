@@ -85,36 +85,65 @@ export const translateBook = createServerFn({ method: "POST" })
 - ترجمه طبیعی، روان و متناسب با ادبیات حوزوی باشد.
 - فقط متن ترجمه‌شده را برگردان بدون هیچ توضیح اضافه.`;
 
+    const { loadAiSettings } = await import("./ai-settings.server");
+    const settings = await loadAiSettings();
+
     let translated = 0;
     let skipped = 0;
+    let viaGoogle = 0;
+    let aiExhausted = false;
+
+    const googleFor = async (src: string) => {
+      const { googleTranslate } = await import("./google-translate.server");
+      return (await googleTranslate(src, data.targetLang)).trim();
+    };
+
     for (const l of lessons) {
       const src = (l.original_text ?? "").trim();
       if (!src) { skipped++; continue; }
       if (!data.overwrite && (l.translation ?? "").trim()) { skipped++; continue; }
       try {
-        const json = await callAI({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: src.slice(0, 50_000) },
-          ],
-        });
-        const out = String(json.choices?.[0]?.message?.content ?? "").trim();
+        let out = "";
+        let usedGoogle = false;
+        if (aiExhausted && settings.google_translate_fallback) {
+          out = await googleFor(src);
+          usedGoogle = true;
+        } else {
+          try {
+            const json = await callAI({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                { role: "system", content: system },
+                { role: "user", content: src.slice(0, 50_000) },
+              ],
+            });
+            out = String(json.choices?.[0]?.message?.content ?? "").trim();
+          } catch (aiErr) {
+            const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+            const limited = msg.includes("اعتبار") || msg.includes("محدودیت");
+            if (!limited || !settings.google_translate_fallback) throw aiErr;
+            aiExhausted = true;
+            out = await googleFor(src);
+            usedGoogle = true;
+          }
+        }
         if (!out) { skipped++; continue; }
         const { error: uerr } = await supabase.from("lessons").update({ translation: out }).eq("id", l.id);
         if (uerr) throw new Error(uerr.message);
         translated++;
+        if (usedGoogle) viaGoogle++;
       } catch (e) {
-        // If AI credit / rate limits hit, stop and report progress
+        // If AI credit / rate limits hit and no fallback is available, stop and report progress
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("اعتبار") || msg.includes("محدودیت")) {
-          return { translated, skipped, total: lessons.length, stopped: true, reason: msg };
+          return { translated, skipped, viaGoogle, total: lessons.length, stopped: true, reason: msg };
         }
         skipped++;
       }
     }
-    return { translated, skipped, total: lessons.length, stopped: false };
+    return { translated, skipped, viaGoogle, total: lessons.length, stopped: false };
   });
+
 
 /* ---------- Owner-only: get a magic-link to sign in as any user ---------- */
 export const impersonateUser = createServerFn({ method: "POST" })
