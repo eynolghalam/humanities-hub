@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_settings: {
+        Row: {
+          custom_api_key: string | null
+          custom_base_url: string | null
+          custom_models: string[]
+          google_translate_fallback: boolean
+          id: boolean
+          openrouter_api_key: string | null
+          openrouter_models: string[]
+          updated_at: string
+        }
+        Insert: {
+          custom_api_key?: string | null
+          custom_base_url?: string | null
+          custom_models?: string[]
+          google_translate_fallback?: boolean
+          id?: boolean
+          openrouter_api_key?: string | null
+          openrouter_models?: string[]
+          updated_at?: string
+        }
+        Update: {
+          custom_api_key?: string | null
+          custom_base_url?: string | null
+          custom_models?: string[]
+          google_translate_fallback?: boolean
+          id?: boolean
+          openrouter_api_key?: string | null
+          openrouter_models?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       book_categories: {
         Row: {
           course_id: string
