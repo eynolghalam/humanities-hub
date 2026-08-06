@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronLeft, BookOpen, Users, LayoutTemplate, TrendingUp } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, BookOpen, Users, LayoutTemplate, TrendingUp, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminPanel,
@@ -89,6 +89,11 @@ function AdminPanel() {
           {isAdmin && (
             <Link to="/admin/progress">
               <Button variant="outline" className="gap-2"><TrendingUp className="h-4 w-4" />پیشرفت طلاب</Button>
+            </Link>
+          )}
+          {isAdmin && (
+            <Link to="/admin/ai">
+              <Button variant="outline" className="gap-2"><Sparkles className="h-4 w-4" />تنظیمات هوش مصنوعی</Button>
             </Link>
           )}
           {isAdmin && (

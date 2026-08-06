@@ -25,6 +25,7 @@ import { Route as AuthenticatedBooksBookIdRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminProgressRouteImport } from './routes/_authenticated/admin.progress'
 import { Route as AuthenticatedAdminHomepageRouteImport } from './routes/_authenticated/admin.homepage'
+import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticated/admin.ai'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedBooksBookIdExamsRouteImport } from './routes/_authenticated/books_.$bookId.exams'
@@ -118,6 +119,11 @@ const AuthenticatedAdminHomepageRoute =
     path: '/admin/homepage',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminAiRoute = AuthenticatedAdminAiRouteImport.update({
+  id: '/admin/ai',
+  path: '/admin/ai',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/stats': typeof AuthenticatedStatsRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/homepage': typeof AuthenticatedAdminHomepageRoute
   '/admin/progress': typeof AuthenticatedAdminProgressRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/stats': typeof AuthenticatedStatsRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/homepage': typeof AuthenticatedAdminHomepageRoute
   '/admin/progress': typeof AuthenticatedAdminProgressRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -204,6 +212,7 @@ export interface FileRoutesById {
   '/_authenticated/stats': typeof AuthenticatedStatsRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
   '/_authenticated/admin/homepage': typeof AuthenticatedAdminHomepageRoute
   '/_authenticated/admin/progress': typeof AuthenticatedAdminProgressRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -228,6 +237,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/ai'
     | '/admin/homepage'
     | '/admin/progress'
     | '/admin/users'
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/ai'
     | '/admin/homepage'
     | '/admin/progress'
     | '/admin/users'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/_authenticated/stats'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/_authenticated/admin/ai'
     | '/_authenticated/admin/homepage'
     | '/_authenticated/admin/progress'
     | '/_authenticated/admin/users'
@@ -411,6 +423,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminHomepageRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/ai': {
+      id: '/_authenticated/admin/ai'
+      path: '/admin/ai'
+      fullPath: '/admin/ai'
+      preLoaderRoute: typeof AuthenticatedAdminAiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
       path: '/.mcp/invoke-tool/$tool'
@@ -452,6 +471,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedJourneyRoute: typeof AuthenticatedJourneyRoute
   AuthenticatedStatsRoute: typeof AuthenticatedStatsRoute
+  AuthenticatedAdminAiRoute: typeof AuthenticatedAdminAiRoute
   AuthenticatedAdminHomepageRoute: typeof AuthenticatedAdminHomepageRoute
   AuthenticatedAdminProgressRoute: typeof AuthenticatedAdminProgressRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
@@ -468,6 +488,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedJourneyRoute: AuthenticatedJourneyRoute,
   AuthenticatedStatsRoute: AuthenticatedStatsRoute,
+  AuthenticatedAdminAiRoute: AuthenticatedAdminAiRoute,
   AuthenticatedAdminHomepageRoute: AuthenticatedAdminHomepageRoute,
   AuthenticatedAdminProgressRoute: AuthenticatedAdminProgressRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
