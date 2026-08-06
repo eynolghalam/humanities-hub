@@ -14,9 +14,12 @@ type Endpoint = {
   label: string;
 };
 
-function buildChain(primaryModel: string): Endpoint[] {
+async function buildChain(primaryModel: string): Promise<Endpoint[]> {
+  const { loadAiSettings } = await import("./ai-settings.server");
+  const settings = await loadAiSettings();
+
   const lovable = process.env.LOVABLE_API_KEY;
-  const openrouter = process.env.OPENROUTER_API_KEY;
+  const openrouter = settings.openrouter_api_key || process.env.OPENROUTER_API_KEY;
   const chain: Endpoint[] = [];
 
   // Primary Lovable model, then progressively cheaper / different Lovable models
@@ -31,14 +34,19 @@ function buildChain(primaryModel: string): Endpoint[] {
     chain.push({ url: LOVABLE_URL, apiKey: lovable, model: m, label: `lovable:${m}` });
   }
 
-  // Optional free fallbacks via OpenRouter (requires OPENROUTER_API_KEY secret).
+  // Free fallbacks via OpenRouter (key from admin AI settings or env secret).
   if (openrouter) {
-    for (const m of [
-      "google/gemini-2.0-flash-exp:free",
-      "meta-llama/llama-3.3-70b-instruct:free",
-      "deepseek/deepseek-chat-v3.1:free",
-    ]) {
+    for (const m of settings.openrouter_models) {
       chain.push({ url: OPENROUTER_URL, apiKey: openrouter, model: m, label: `openrouter:${m}` });
+    }
+  }
+
+  // Custom OpenAI-compatible provider configured by the admin.
+  if (settings.custom_base_url && settings.custom_models.length > 0) {
+    const base = settings.custom_base_url.replace(/\/+$/, "");
+    const url = base.endsWith("/chat/completions") ? base : `${base}/chat/completions`;
+    for (const m of settings.custom_models) {
+      chain.push({ url, apiKey: settings.custom_api_key ?? "", model: m, label: `custom:${m}` });
     }
   }
 
@@ -47,12 +55,12 @@ function buildChain(primaryModel: string): Endpoint[] {
 
 export async function callAIWithFallback(body: AIBody): Promise<any> {
   const primaryModel = body.model ?? "google/gemini-2.5-flash";
-  const chain = buildChain(primaryModel);
+  const chain = await buildChain(primaryModel);
   if (chain.length === 0) throw new Error("هیچ ارائه‌دهنده هوش مصنوعی پیکربندی نشده است.");
 
   let lastErr: Error | null = null;
   for (const ep of chain) {
-    if (!ep.apiKey) continue;
+    if (ep.apiKey === undefined) continue;
     try {
       const res = await fetch(ep.url, {
         method: "POST",
@@ -73,7 +81,7 @@ export async function callAIWithFallback(body: AIBody): Promise<any> {
   }
   const detail = lastErr?.message ?? "unknown";
   if (detail.includes("402")) {
-    throw new Error("اعتبار هوش مصنوعی تمام شده و ارائه‌دهنده جایگزین رایگان پیکربندی نشده است. لطفاً کلید OPENROUTER_API_KEY را در تنظیمات اضافه کنید یا اعتبار خرید کنید.");
+    throw new Error("اعتبار هوش مصنوعی تمام شده و ارائه‌دهنده جایگزین رایگان پیکربندی نشده است. لطفاً در تنظیمات هوش مصنوعی یک ارائه‌دهنده رایگان اضافه کنید.");
   }
   if (detail.includes("429")) {
     throw new Error("محدودیت درخواست تمامی ارائه‌دهنده‌ها. کمی بعد دوباره تلاش کنید.");
