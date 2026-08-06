@@ -33,16 +33,29 @@ export const translateLessonText = createServerFn({ method: "POST" })
 - محتوای داخل <script>, <style>, و کد ها را ترجمه نکن.
 - ترجمه طبیعی، روان و متناسب با ادبیات حوزوی باشد.
 - فقط متن ترجمه‌شده را برگردان بدون هیچ توضیح اضافه.`;
-    const json = await callAI({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: data.text },
-      ],
-    });
-    const translated = json.choices?.[0]?.message?.content ?? "";
-    return { translation: String(translated).trim() };
+    try {
+      const json = await callAI({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: data.text },
+        ],
+      });
+      const translated = String(json.choices?.[0]?.message?.content ?? "").trim();
+      if (translated) return { translation: translated, provider: "ai" as const };
+      throw new Error("empty");
+    } catch (e) {
+      // AI credits / limits exhausted → free Google Translate fallback
+      const { loadAiSettings } = await import("./ai-settings.server");
+      const settings = await loadAiSettings();
+      if (!settings.google_translate_fallback) throw e;
+      const { googleTranslate } = await import("./google-translate.server");
+      const out = await googleTranslate(data.text, data.targetLang);
+      if (!out) throw e;
+      return { translation: out, provider: "google" as const };
+    }
   });
+
 
 /* ---------- Translate ALL lessons of a book at once ---------- */
 export const translateBook = createServerFn({ method: "POST" })
