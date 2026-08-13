@@ -149,6 +149,8 @@ function LessonView() {
 
       <ExerciseSection lessonId={lesson.id} />
 
+      <QASection scope={{ lessonId: lesson.id, bookId: lesson.book_id, courseId: lesson.course_id }} title="پرسش از استاد دربارهٔ این درس" />
+
       <div className="mt-8 flex items-center justify-between gap-3">
         {prev ? (
           <Link to="/lessons/$lessonId" params={{ lessonId: prev.id }} className="flex-1">
