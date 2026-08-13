@@ -6,6 +6,7 @@ import { ChevronLeft, GraduationCap, FileQuestion, Languages } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { BookProgressBar } from "@/components/ProgressInline";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
+import { QASection } from "@/components/QASection";
 
 export const Route = createFileRoute("/_authenticated/books/$bookId")({
   component: BookDetail,
@@ -111,6 +112,10 @@ function BookDetail() {
             </Link>
           );
         })}
+      </div>
+
+      <div className="mt-8">
+        <QASection scope={{ bookId, courseId: courseId ?? null }} title="پرسش از استاد دربارهٔ این کتاب" />
       </div>
     </div>
   );

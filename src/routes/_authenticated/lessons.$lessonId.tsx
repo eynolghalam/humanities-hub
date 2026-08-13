@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, FileText, Video, Music, Download, BookOpen, Languages, Lightbulb } from "lucide-react";
 import { ExerciseSection } from "@/components/ExerciseSection";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
+import { QASection } from "@/components/QASection";
 
 const sanitizeContent = (html: string) => DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
 const sanitizeEmbed = (html: string) =>
@@ -148,6 +149,8 @@ function LessonView() {
       )}
 
       <ExerciseSection lessonId={lesson.id} />
+
+      <QASection scope={{ lessonId: lesson.id, bookId: lesson.book_id, courseId: lesson.course_id }} title="پرسش از استاد دربارهٔ این درس" />
 
       <div className="mt-8 flex items-center justify-between gap-3">
         {prev ? (
