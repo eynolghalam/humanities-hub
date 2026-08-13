@@ -112,7 +112,7 @@ export function QASection({
           </div>
           <h2 className="text-lg font-bold">{title}</h2>
         </div>
-        {!showAll && (
+        {!isStaff && (
           <Button size="sm" variant={open ? "ghost" : "default"} onClick={() => setOpen(o => !o)}>
             {open ? "انصراف" : "پرسش جدید"}
           </Button>
