@@ -61,6 +61,14 @@ export function Header() {
               </Button>
             </Link>
           )}
+          {user && (
+            <Link to="/questions">
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <MessageCircleQuestion className="h-4 w-4" />
+                <span className="hidden sm:inline">پرسش و پاسخ</span>
+              </Button>
+            </Link>
+          )}
           {(isAdmin || isTeacher) && (
             <Link to="/admin">
               <Button variant="ghost" size="sm" className="gap-1.5">
