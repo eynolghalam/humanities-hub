@@ -113,6 +113,10 @@ function BookDetail() {
           );
         })}
       </div>
+
+      <div className="mt-8">
+        <QASection scope={{ bookId, courseId: courseId ?? null }} title="پرسش از استاد دربارهٔ این کتاب" />
+      </div>
     </div>
   );
 }
