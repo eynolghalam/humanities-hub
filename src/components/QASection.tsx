@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircleQuestion, Send, CheckCircle2, User2, GraduationCap } from "lucide-react";
+import { MessageCircleQuestion, Send, CheckCircle2, User2, GraduationCap, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 export type QAScope = {
@@ -25,6 +26,12 @@ type QuestionRow = {
   lesson_id: string | null;
   book_id: string | null;
   course_id: string | null;
+};
+
+type ContextMap = {
+  courses: Record<string, string>;
+  books: Record<string, string>;
+  lessons: Record<string, string>;
 };
 
 const fmt = (d: string) => new Date(d).toLocaleString("fa-IR", { dateStyle: "short", timeStyle: "short" });
@@ -79,6 +86,28 @@ export function QASection({
       const map: Record<string, string> = {};
       (data ?? []).forEach(p => { map[p.id] = p.full_name || "کاربر"; });
       return map;
+    },
+  });
+
+  const courseIds = Array.from(new Set((questions ?? []).map(q => q.course_id).filter(Boolean))) as string[];
+  const bookIds = Array.from(new Set((questions ?? []).map(q => q.book_id).filter(Boolean))) as string[];
+  const lessonIds = Array.from(new Set((questions ?? []).map(q => q.lesson_id).filter(Boolean))) as string[];
+  const { data: contextMap } = useQuery({
+    queryKey: ["qa-context", courseIds.join(","), bookIds.join(","), lessonIds.join(",")],
+    enabled: showAll && (courseIds.length > 0 || bookIds.length > 0 || lessonIds.length > 0),
+    queryFn: async (): Promise<ContextMap> => {
+      const [coursesRes, booksRes, lessonsRes] = await Promise.all([
+        courseIds.length > 0 ? supabase.from("courses").select("id,title").in("id", courseIds) : Promise.resolve({ data: [] }),
+        bookIds.length > 0 ? supabase.from("books").select("id,title").in("id", bookIds) : Promise.resolve({ data: [] }),
+        lessonIds.length > 0 ? supabase.from("lessons").select("id,title").in("id", lessonIds) : Promise.resolve({ data: [] }),
+      ]);
+      const courses: Record<string, string> = {};
+      const books: Record<string, string> = {};
+      const lessons: Record<string, string> = {};
+      (coursesRes.data ?? []).forEach(r => { courses[r.id] = r.title; });
+      (booksRes.data ?? []).forEach(r => { books[r.id] = r.title; });
+      (lessonsRes.data ?? []).forEach(r => { lessons[r.id] = r.title; });
+      return { courses, books, lessons };
     },
   });
 
@@ -147,6 +176,7 @@ export function QASection({
               askerName={names?.[q.user_id]}
               isStaff={isStaff}
               currentUserId={user?.id ?? null}
+              contextMap={showAll ? contextMap : undefined}
             />
           ))}
         </div>
@@ -160,11 +190,13 @@ function QuestionThread({
   askerName,
   isStaff,
   currentUserId,
+  contextMap,
 }: {
   question: QuestionRow;
   askerName?: string;
   isStaff: boolean;
   currentUserId: string | null;
+  contextMap?: ContextMap;
 }) {
   const qc = useQueryClient();
   const [expanded, setExpanded] = useState(false);
@@ -208,14 +240,57 @@ function QuestionThread({
     <div className="rounded-xl border border-border bg-card p-4">
       <button type="button" onClick={() => setExpanded(v => !v)} className="w-full text-start">
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="font-semibold">{question.title}</div>
             <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">{question.body}</div>
-            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-              <User2 className="h-3 w-3" />
-              {isStaff ? (askerName ?? "کاربر") : "شما"}
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <User2 className="h-3 w-3" />
+                {isStaff ? (askerName ?? "کاربر") : "شما"}
+              </span>
               <span>•</span>
-              {fmt(question.created_at)}
+              <span>{fmt(question.created_at)}</span>
+              {contextMap && question.lesson_id && contextMap.lessons[question.lesson_id] && (
+                <>
+                  <span>•</span>
+                  <Link
+                    to="/lessons/$lessonId"
+                    params={{ lessonId: question.lesson_id }}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-primary hover:underline"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <GraduationCap className="h-3 w-3" />
+                    {contextMap.lessons[question.lesson_id]}
+                  </Link>
+                </>
+              )}
+              {contextMap && question.book_id && contextMap.books[question.book_id] && (
+                <>
+                  <span>•</span>
+                  <Link
+                    to="/books/$bookId"
+                    params={{ bookId: question.book_id }}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-primary hover:underline"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <BookOpen className="h-3 w-3" />
+                    {contextMap.books[question.book_id]}
+                  </Link>
+                </>
+              )}
+              {contextMap && question.course_id && contextMap.courses[question.course_id] && !question.book_id && !question.lesson_id && (
+                <>
+                  <span>•</span>
+                  <Link
+                    to="/courses/$courseId"
+                    params={{ courseId: question.course_id }}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-primary hover:underline"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {contextMap.courses[question.course_id]}
+                  </Link>
+                </>
+              )}
             </div>
           </div>
           <Badge variant={question.status === "answered" ? "default" : "secondary"} className="shrink-0 gap-1">
