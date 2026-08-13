@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, Shield, Languages, GraduationCap, Map, BarChart3 } from "lucide-react";
+import { BookOpen, LogOut, Shield, Languages, GraduationCap, Map, BarChart3, MessageCircleQuestion } from "lucide-react";
 import { StatsBar } from "@/components/StatsBar";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import {
