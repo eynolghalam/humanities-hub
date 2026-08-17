@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { getPhoneAuthConfig, requestPhoneCode, verifyPhoneCode, phoneLoginEmail } from "@/lib/sms.functions";
+import { isValidPhone } from "@/lib/phone";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -32,6 +36,7 @@ function AuthPage() {
   useEffect(() => {
     if (user) navigate({ to: dest });
   }, [user, navigate, dest]);
+
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
