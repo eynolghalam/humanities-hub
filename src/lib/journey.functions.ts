@@ -70,15 +70,33 @@ export const listCoursesWithProgress = createServerFn({ method: "GET" })
       .from("courses").select("id,title,description,sort_order").order("sort_order");
     const out: Array<{ id: string; title: string; description: string | null; total: number; completed: number; percent: number }> = [];
     for (const c of courses ?? []) {
-      const { data: lessons } = await supabase.from("lessons").select("id").eq("course_id", c.id);
+      const { data: lessons } = await supabase.from("lessons").select("id,book_id,no_exam_required").eq("course_id", c.id);
       const ids = (lessons ?? []).map(l => l.id);
       let done = 0;
       if (ids.length) {
         const { data: prog } = await supabase
           .from("user_lesson_progress").select("lesson_id,status")
           .eq("user_id", userId).in("lesson_id", ids);
-        done = (prog ?? []).filter(p => p.status === "completed").length;
+        const completed = new Set((prog ?? []).filter(p => p.status === "completed").map(p => p.lesson_id));
+        const bookIds = Array.from(new Set((lessons ?? []).map(l => l.book_id).filter(Boolean))) as string[];
+        const { data: equivalents } = bookIds.length
+          ? await supabase.from("book_equivalents").select("book_id,equivalent_book_id").in("book_id", bookIds)
+          : { data: [] as { book_id: string; equivalent_book_id: string }[] };
+        const equivMap = new Map<string, string[]>();
+        for (const e of equivalents ?? []) {
+          equivMap.set(e.book_id, [...(equivMap.get(e.book_id) ?? []), e.equivalent_book_id]);
+          equivMap.set(e.equivalent_book_id, [...(equivMap.get(e.equivalent_book_id) ?? []), e.book_id]);
+        }
+        const bookDone = (bookId: string) => {
+          const bls = (lessons ?? []).filter(l => l.book_id === bookId);
+          return bls.length > 0 && bls.every(l => l.no_exam_required || completed.has(l.id));
+        };
+        const satisfied = new Set(bookIds.filter(b => (equivMap.get(b) ?? []).some(bookDone)));
+        done = (lessons ?? []).filter(l =>
+          completed.has(l.id) || l.no_exam_required || (l.book_id && satisfied.has(l.book_id)),
+        ).length;
       }
+
       out.push({
         id: c.id, title: c.title, description: c.description,
         total: ids.length, completed: done,
