@@ -148,7 +148,7 @@ function LessonView() {
         </Section>
       )}
 
-      <ExerciseSection lessonId={lesson.id} />
+      <ExerciseSection lessonId={lesson.id} noExamRequired={!!lesson.no_exam_required} />
 
       <QASection scope={{ lessonId: lesson.id, bookId: lesson.book_id, courseId: lesson.course_id }} title="پرسش از استاد دربارهٔ این درس" />
 
