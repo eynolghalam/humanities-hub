@@ -66,17 +66,28 @@ function AuthPage() {
     }
   };
 
+  const cfgFn = useServerFn(getPhoneAuthConfig);
+  const { data: phoneCfg } = useQuery({ queryKey: ["phone-auth-config"], queryFn: () => cfgFn() });
+  const phoneEnabled = !!phoneCfg?.enabled;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-elegant">
           <h1 className="mb-6 text-center text-2xl font-extrabold">{t("welcome")}</h1>
-          <Tabs defaultValue="signin">
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs defaultValue={phoneEnabled ? "phone" : "signin"}>
+            <TabsList className={`grid w-full ${phoneEnabled ? "grid-cols-3" : "grid-cols-2"}`}>
+              {phoneEnabled && <TabsTrigger value="phone">موبایل</TabsTrigger>}
               <TabsTrigger value="signin">{t("login")}</TabsTrigger>
               <TabsTrigger value="signup">{t("signup")}</TabsTrigger>
             </TabsList>
+            {phoneEnabled && (
+              <TabsContent value="phone">
+                <PhoneAuth mode={phoneCfg!.authMode} onDone={() => navigate({ to: dest })} />
+              </TabsContent>
+            )}
+
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4 pt-4">
                 <div className="space-y-2">
