@@ -9,6 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircleQuestion, Send, CheckCircle2, User2, GraduationCap, BookOpen } from "lucide-react";
 import { toast } from "sonner";
+import DOMPurify from "dompurify";
+import { RichTextEditor } from "@/components/RichTextEditor";
+
+const clean = (html: string) => DOMPurify.sanitize(html ?? "", { USE_PROFILES: { html: true } });
+const isEmptyHtml = (html: string) => !html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
 
 export type QAScope = {
   lessonId?: string | null;
@@ -151,9 +156,9 @@ export function QASection({
       {open && (
         <div className="mb-6 space-y-3 rounded-xl border border-border bg-card p-4">
           <Input placeholder="عنوان پرسش" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
-          <Textarea rows={4} placeholder="متن پرسش خود را بنویسید…" value={newBody} onChange={e => setNewBody(e.target.value)} />
+          <RichTextEditor value={newBody} onChange={setNewBody} placeholder="متن پرسش خود را بنویسید…" minHeight={110} />
           <Button
-            disabled={!newTitle.trim() || !newBody.trim() || ask.isPending}
+            disabled={!newTitle.trim() || isEmptyHtml(newBody) || ask.isPending}
             onClick={() => ask.mutate()}
             className="gap-2"
           >
@@ -302,7 +307,7 @@ function QuestionThread({
 
       {expanded && (
         <div className="mt-4 space-y-3 border-t border-border pt-4">
-          <p className="whitespace-pre-wrap text-sm">{question.body}</p>
+          <div className="rich-content text-sm" dangerouslySetInnerHTML={{ __html: clean(question.body) }} />
           {(replies ?? []).map(r => (
             <div
               key={r.id}
@@ -314,18 +319,18 @@ function QuestionThread({
                 <span>•</span>
                 {fmt(r.created_at)}
               </div>
-              <p className="whitespace-pre-wrap">{r.body}</p>
+              <div className="rich-content" dangerouslySetInnerHTML={{ __html: clean(r.body) }} />
             </div>
           ))}
 
-          <div className="flex items-end gap-2">
-            <Textarea
-              rows={2}
-              placeholder={isStaff ? "پاسخ خود را بنویسید…" : "پیام جدید…"}
+          <div className="space-y-2">
+            <RichTextEditor
               value={reply}
-              onChange={e => setReply(e.target.value)}
+              onChange={setReply}
+              placeholder={isStaff ? "پاسخ خود را بنویسید…" : "پیام جدید…"}
+              minHeight={90}
             />
-            <Button disabled={!reply.trim() || send.isPending} onClick={() => send.mutate()} className="gap-2">
+            <Button disabled={isEmptyHtml(reply) || send.isPending} onClick={() => send.mutate()} className="gap-2">
               <Send className="h-4 w-4" />
               ارسال
             </Button>

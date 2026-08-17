@@ -83,6 +83,11 @@ function JourneyTree({ courseId }: { courseId: string }) {
           <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
             <BookOpen className="h-5 w-5 text-primary" />
             {b.title}
+            {b.satisfiedByEquivalent && (
+              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                با کتاب موازی تکمیل شده
+              </span>
+            )}
           </h2>
           {b.lessons.length === 0 && (
             <p className="text-sm text-muted-foreground">{t("noLessons")}</p>

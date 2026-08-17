@@ -21,10 +21,11 @@ export const extractOrGenerateExercises = createServerFn({ method: "POST" })
     }
     const { data: lesson, error: lerr } = await supabase
       .from("lessons")
-      .select("id,title,original_text,translation,explanation,content")
+      .select("id,title,original_text,translation,explanation,content,no_exam_required")
       .eq("id", data.lessonId)
       .single();
     if (lerr || !lesson) throw new Error("درس یافت نشد");
+    if (lesson.no_exam_required) throw new Error("این درس «بدون نیاز به آزمون» علامت خورده است.");
 
     const fullText = [lesson.title, lesson.original_text, lesson.translation, lesson.explanation, lesson.content]
       .filter(Boolean).join("\n\n");
@@ -293,13 +294,14 @@ export const getBookProgress = createServerFn({ method: "GET" })
   .inputValidator(z.object({ bookId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: lessons } = await supabase.from("lessons").select("id").eq("book_id", data.bookId);
+    const { data: lessons } = await supabase.from("lessons").select("id,no_exam_required").eq("book_id", data.bookId);
     const ids = (lessons ?? []).map(l => l.id);
     if (ids.length === 0) return { total: 0, completed: 0, percent: 0 };
     const { data: prog } = await supabase
       .from("user_lesson_progress").select("lesson_id,status")
       .eq("user_id", userId).in("lesson_id", ids);
-    const done = (prog ?? []).filter(p => p.status === "completed").length;
+    const completedIds = new Set((prog ?? []).filter(p => p.status === "completed").map(p => p.lesson_id));
+    const done = (lessons ?? []).filter(l => l.no_exam_required || completedIds.has(l.id)).length;
     return { total: ids.length, completed: done, percent: Math.round((done / ids.length) * 100) };
   });
 
@@ -308,12 +310,13 @@ export const getCourseProgress = createServerFn({ method: "GET" })
   .inputValidator(z.object({ courseId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: lessons } = await supabase.from("lessons").select("id").eq("course_id", data.courseId);
+    const { data: lessons } = await supabase.from("lessons").select("id,no_exam_required").eq("course_id", data.courseId);
     const ids = (lessons ?? []).map(l => l.id);
     if (ids.length === 0) return { total: 0, completed: 0, percent: 0 };
     const { data: prog } = await supabase
       .from("user_lesson_progress").select("lesson_id,status")
       .eq("user_id", userId).in("lesson_id", ids);
-    const done = (prog ?? []).filter(p => p.status === "completed").length;
+    const completedIds = new Set((prog ?? []).filter(p => p.status === "completed").map(p => p.lesson_id));
+    const done = (lessons ?? []).filter(l => l.no_exam_required || completedIds.has(l.id)).length;
     return { total: ids.length, completed: done, percent: Math.round((done / ids.length) * 100) };
   });

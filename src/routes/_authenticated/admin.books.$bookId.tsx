@@ -14,7 +14,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronLeft, Sparkles, BookDown, Loader2, Languages, FileQuestion } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, Sparkles, BookDown, Loader2, Languages, FileQuestion, Shuffle } from "lucide-react";
+import { RichTextEditor } from "@/components/RichTextEditor";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/admin/books/$bookId")({
   component: ManageLessons,
@@ -24,6 +26,7 @@ interface Lesson {
   id: string; book_id: string | null; course_id: string; title: string; content: string | null;
   video_embed: string | null; audio_url: string | null; slide_url: string | null; sort_order: number;
   original_text: string | null; translation: string | null; explanation: string | null;
+  no_exam_required?: boolean | null;
 }
 
 function ManageLessons() {
@@ -83,6 +86,7 @@ function ManageLessons() {
             <Link to="/books/$bookId/exams" params={{ bookId }}>
               <Button variant="outline" className="gap-2"><FileQuestion className="h-4 w-4" />سوالات امتحانی</Button>
             </Link>
+            <EquivalentBooksDialog bookId={bookId} courseId={courseId} />
             <TranslateBookButton bookId={bookId} onDone={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })} />
             <ImportFromTextDialog bookId={bookId} courseId={courseId} existingCount={lessons?.length ?? 0} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-lessons-book", bookId] })}>
               <Button variant="outline" className="gap-2"><Sparkles className="h-4 w-4" />{t("importFromText")}</Button>
@@ -141,6 +145,7 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
   const [content, setContent] = useState(lesson?.content ?? "");
   const [videoEmbed, setVideoEmbed] = useState(lesson?.video_embed ?? "");
   const [sortOrder, setSortOrder] = useState(lesson?.sort_order ?? 0);
+  const [noExam, setNoExam] = useState(!!lesson?.no_exam_required);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [slideFile, setSlideFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -175,7 +180,7 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
       if (audioFile) audio_url = await upload("lesson-audio", audioFile);
       if (slideFile) slide_url = await upload("lesson-slides", slideFile);
 
-      const basePayload = { course_id: courseId, book_id: bookId, title, content, original_text: originalText, translation, explanation, video_embed: videoEmbed, audio_url, slide_url, sort_order: sortOrder };
+      const basePayload = { course_id: courseId, book_id: bookId, title, content, original_text: originalText, translation, explanation, video_embed: videoEmbed, audio_url, slide_url, sort_order: sortOrder, no_exam_required: noExam };
       const { error } = lesson
         ? await supabase.from("lessons").update(basePayload).eq("id", lesson.id)
         : await supabase.from("lessons").insert({ ...basePayload, created_by: user?.id });
@@ -197,7 +202,7 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
         <DialogHeader><DialogTitle>{lesson ? t("editLesson") : t("addLesson")}</DialogTitle></DialogHeader>
         <form onSubmit={save} className="space-y-4">
           <div className="space-y-2"><Label>{t("title")}</Label><Input required value={title} onChange={e => setTitle(e.target.value)} /></div>
-          <div className="space-y-2"><Label>{t("originalText")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><Textarea rows={5} value={originalText} onChange={e => setOriginalText(e.target.value)} dir="ltr" /></div>
+          <div className="space-y-2"><Label>{t("originalText")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><RichTextEditor value={originalText} onChange={setOriginalText} minHeight={140} /></div>
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               <Label>{t("translation")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label>
@@ -206,10 +211,10 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
                 {translating ? "در حال ترجمه…" : "ترجمه با هوش مصنوعی"}
               </Button>
             </div>
-            <Textarea rows={5} value={translation} onChange={e => setTranslation(e.target.value)} dir="ltr" />
+            <RichTextEditor value={translation} onChange={setTranslation} minHeight={140} />
           </div>
-          <div className="space-y-2"><Label>{t("explanation")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><Textarea rows={5} value={explanation} onChange={e => setExplanation(e.target.value)} dir="ltr" /></div>
-          <div className="space-y-2"><Label>{t("content")}</Label><Textarea rows={6} value={content} onChange={e => setContent(e.target.value)} /></div>
+          <div className="space-y-2"><Label>{t("explanation")} <span className="text-xs text-muted-foreground">(HTML پشتیبانی می‌شود)</span></Label><RichTextEditor value={explanation} onChange={setExplanation} minHeight={140} /></div>
+          <div className="space-y-2"><Label>{t("content")}</Label><RichTextEditor value={content} onChange={setContent} minHeight={120} /></div>
           <div className="space-y-2"><Label>{t("videoEmbed")}</Label><Textarea rows={3} value={videoEmbed} onChange={e => setVideoEmbed(e.target.value)} dir="ltr" placeholder='<iframe src="..."></iframe>' /></div>
           <div className="space-y-2">
             <Label>{t("audioFile")}</Label>
@@ -220,6 +225,13 @@ function LessonDialog({ bookId, courseId, lesson, children, onSaved }: { bookId:
             <Label>{t("slideFile")}</Label>
             <Input type="file" accept="application/pdf,image/*" onChange={e => setSlideFile(e.target.files?.[0] ?? null)} />
             {lesson?.slide_url && !slideFile && <p className="text-xs text-muted-foreground">{lesson.slide_url}</p>}
+          </div>
+          <div className="flex items-start justify-between gap-3 rounded-xl border border-border p-3">
+            <div>
+              <Label>بدون نیاز به آزمون</Label>
+              <p className="text-xs text-muted-foreground">برای دروسی مانند سرشناسه، مقدمه و سخن نویسنده؛ آزمون طراحی نمی‌شود و درس بعدی قفل نمی‌ماند.</p>
+            </div>
+            <Switch checked={noExam} onCheckedChange={setNoExam} />
           </div>
           <div className="space-y-2"><Label>{t("sortOrder")}</Label><Input type="number" value={sortOrder} onChange={e => setSortOrder(Number(e.target.value))} dir="ltr" /></div>
           <Button type="submit" disabled={saving} className="w-full bg-hero text-primary-foreground">{saving ? t("uploading") : t("save")}</Button>
@@ -722,3 +734,62 @@ function TranslateBookButton({ bookId, onDone }: { bookId: string; onDone: () =>
 }
 
 
+
+
+function EquivalentBooksDialog({ bookId, courseId }: { bookId: string; courseId: string }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+
+  const { data: books } = useQuery({
+    queryKey: ["equiv-books", courseId],
+    queryFn: async () =>
+      (await supabase.from("books").select("id,title").eq("course_id", courseId).order("sort_order")).data ?? [],
+    enabled: open,
+  });
+
+  const { data: links } = useQuery({
+    queryKey: ["equiv-links", bookId],
+    queryFn: async () =>
+      (await supabase
+        .from("book_equivalents")
+        .select("id,book_id,equivalent_book_id")
+        .or(`book_id.eq.${bookId},equivalent_book_id.eq.${bookId}`)).data ?? [],
+    enabled: open,
+  });
+
+  const linkedIds = new Set((links ?? []).map(l => (l.book_id === bookId ? l.equivalent_book_id : l.book_id)));
+
+  const toggle = async (otherId: string) => {
+    const existing = (links ?? []).find(l => l.book_id === otherId || l.equivalent_book_id === otherId);
+    const { error } = existing
+      ? await supabase.from("book_equivalents").delete().eq("id", existing.id)
+      : await supabase.from("book_equivalents").insert({ book_id: bookId, equivalent_book_id: otherId });
+    if (error) toast.error(error.message);
+    else qc.invalidateQueries({ queryKey: ["equiv-links", bookId] });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="gap-2"><Shuffle className="h-4 w-4" />کتاب‌های موازی</Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader><DialogTitle>کتاب‌های معادل (موازی)</DialogTitle></DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          گذراندن هر یک از کتاب‌های انتخاب‌شده، معادل گذراندن این کتاب در سیر آموزشی محسوب می‌شود.
+        </p>
+        <div className="space-y-2">
+          {(books ?? []).filter(b => b.id !== bookId).map(b => (
+            <label key={b.id} className="flex cursor-pointer items-center justify-between rounded-xl border border-border p-3">
+              <span className="text-sm font-medium">{b.title}</span>
+              <Switch checked={linkedIds.has(b.id)} onCheckedChange={() => toggle(b.id)} />
+            </label>
+          ))}
+          {(books ?? []).filter(b => b.id !== bookId).length === 0 && (
+            <p className="text-sm text-muted-foreground">کتاب دیگری در این پایه وجود ندارد.</p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

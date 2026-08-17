@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, Sparkles, Trophy, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
-export function ExerciseSection({ lessonId }: { lessonId: string }) {
+export function ExerciseSection({ lessonId, noExamRequired = false }: { lessonId: string; noExamRequired?: boolean }) {
   const { t } = useI18n();
   const { isAdmin, isTeacher } = useAuth();
   const qc = useQueryClient();
@@ -43,6 +43,14 @@ export function ExerciseSection({ lessonId }: { lessonId: string }) {
       setGenerating(false);
     }
   };
+
+  if (noExamRequired) {
+    return (
+      <section className="bg-card-soft mb-6 rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+        این درس نیازی به آزمون ندارد؛ برای رفتن به درس بعد لازم نیست آزمونی بگذرانید.
+      </section>
+    );
+  }
 
   if (isLoading) return null;
 
