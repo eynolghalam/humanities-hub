@@ -24,6 +24,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticated/admin.ai'
 import { Route as AuthenticatedAdminHomepageRouteImport } from './routes/_authenticated/admin.homepage'
 import { Route as AuthenticatedAdminProgressRouteImport } from './routes/_authenticated/admin.progress'
+import { Route as AuthenticatedAdminSmsRouteImport } from './routes/_authenticated/admin.sms'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedBooksBookIdRouteImport } from './routes/_authenticated/books.$bookId'
 import { Route as AuthenticatedCoursesIndexRouteImport } from './routes/_authenticated/courses.index'
@@ -112,6 +113,11 @@ const AuthenticatedAdminProgressRoute =
     path: '/admin/progress',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminSmsRoute = AuthenticatedAdminSmsRouteImport.update({
+  id: '/admin/sms',
+  path: '/admin/sms',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -174,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/homepage': typeof AuthenticatedAdminHomepageRoute
   '/admin/progress': typeof AuthenticatedAdminProgressRoute
+  '/admin/sms': typeof AuthenticatedAdminSmsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/homepage': typeof AuthenticatedAdminHomepageRoute
   '/admin/progress': typeof AuthenticatedAdminProgressRoute
+  '/admin/sms': typeof AuthenticatedAdminSmsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/books/$bookId': typeof AuthenticatedBooksBookIdRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
   '/_authenticated/admin/homepage': typeof AuthenticatedAdminHomepageRoute
   '/_authenticated/admin/progress': typeof AuthenticatedAdminProgressRoute
+  '/_authenticated/admin/sms': typeof AuthenticatedAdminSmsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/books/$bookId': typeof AuthenticatedBooksBookIdRoute
   '/_authenticated/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
@@ -250,6 +259,7 @@ export interface FileRouteTypes {
     | '/admin/ai'
     | '/admin/homepage'
     | '/admin/progress'
+    | '/admin/sms'
     | '/admin/users'
     | '/books/$bookId'
     | '/courses/$courseId'
@@ -274,6 +284,7 @@ export interface FileRouteTypes {
     | '/admin/ai'
     | '/admin/homepage'
     | '/admin/progress'
+    | '/admin/sms'
     | '/admin/users'
     | '/books/$bookId'
     | '/courses/$courseId'
@@ -299,6 +310,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/ai'
     | '/_authenticated/admin/homepage'
     | '/_authenticated/admin/progress'
+    | '/_authenticated/admin/sms'
     | '/_authenticated/admin/users'
     | '/_authenticated/books/$bookId'
     | '/_authenticated/courses/$courseId'
@@ -428,6 +440,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminProgressRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/sms': {
+      id: '/_authenticated/admin/sms'
+      path: '/admin/sms'
+      fullPath: '/admin/sms'
+      preLoaderRoute: typeof AuthenticatedAdminSmsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/users': {
       id: '/_authenticated/admin/users'
       path: '/admin/users'
@@ -494,6 +513,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminAiRoute: typeof AuthenticatedAdminAiRoute
   AuthenticatedAdminHomepageRoute: typeof AuthenticatedAdminHomepageRoute
   AuthenticatedAdminProgressRoute: typeof AuthenticatedAdminProgressRoute
+  AuthenticatedAdminSmsRoute: typeof AuthenticatedAdminSmsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedBooksBookIdRoute: typeof AuthenticatedBooksBookIdRoute
   AuthenticatedCoursesCourseIdRoute: typeof AuthenticatedCoursesCourseIdRoute
@@ -512,6 +532,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminAiRoute: AuthenticatedAdminAiRoute,
   AuthenticatedAdminHomepageRoute: AuthenticatedAdminHomepageRoute,
   AuthenticatedAdminProgressRoute: AuthenticatedAdminProgressRoute,
+  AuthenticatedAdminSmsRoute: AuthenticatedAdminSmsRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedBooksBookIdRoute: AuthenticatedBooksBookIdRoute,
   AuthenticatedCoursesCourseIdRoute: AuthenticatedCoursesCourseIdRoute,
