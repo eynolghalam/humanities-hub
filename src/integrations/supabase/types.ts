@@ -74,6 +74,42 @@ export type Database = {
         }
         Relationships: []
       }
+      book_equivalents: {
+        Row: {
+          book_id: string
+          created_at: string
+          equivalent_book_id: string
+          id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          equivalent_book_id: string
+          id?: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          equivalent_book_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_equivalents_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_equivalents_equivalent_book_id_fkey"
+            columns: ["equivalent_book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_exam_files: {
         Row: {
           book_id: string
@@ -328,6 +364,7 @@ export type Database = {
           created_by: string | null
           explanation: string | null
           id: string
+          no_exam_required: boolean
           original_text: string | null
           slide_url: string | null
           sort_order: number
@@ -345,6 +382,7 @@ export type Database = {
           created_by?: string | null
           explanation?: string | null
           id?: string
+          no_exam_required?: boolean
           original_text?: string | null
           slide_url?: string | null
           sort_order?: number
@@ -362,6 +400,7 @@ export type Database = {
           created_by?: string | null
           explanation?: string | null
           id?: string
+          no_exam_required?: boolean
           original_text?: string | null
           slide_url?: string | null
           sort_order?: number
@@ -387,12 +426,46 @@ export type Database = {
           },
         ]
       }
+      phone_otp_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string
+          purpose: string
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          phone: string
+          purpose?: string
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+          purpose?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           full_name: string | null
           id: string
           pending_teacher: boolean
+          phone: string | null
           updated_at: string
         }
         Insert: {
@@ -400,6 +473,7 @@ export type Database = {
           full_name?: string | null
           id: string
           pending_teacher?: boolean
+          phone?: string | null
           updated_at?: string
         }
         Update: {
@@ -407,6 +481,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           pending_teacher?: boolean
+          phone?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -531,6 +606,51 @@ export type Database = {
           value_ar?: string | null
           value_en?: string | null
           value_fa?: string | null
+        }
+        Relationships: []
+      }
+      sms_settings: {
+        Row: {
+          api_key: string | null
+          auth_mode: string
+          body_template: string | null
+          code_ttl_seconds: number
+          enabled: boolean
+          headers_json: string | null
+          http_method: string
+          id: boolean
+          message_template: string
+          send_url: string | null
+          sender: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_key?: string | null
+          auth_mode?: string
+          body_template?: string | null
+          code_ttl_seconds?: number
+          enabled?: boolean
+          headers_json?: string | null
+          http_method?: string
+          id?: boolean
+          message_template?: string
+          send_url?: string | null
+          sender?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string | null
+          auth_mode?: string
+          body_template?: string | null
+          code_ttl_seconds?: number
+          enabled?: boolean
+          headers_json?: string | null
+          http_method?: string
+          id?: boolean
+          message_template?: string
+          send_url?: string | null
+          sender?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
