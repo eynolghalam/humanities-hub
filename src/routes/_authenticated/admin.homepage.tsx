@@ -31,13 +31,25 @@ interface Block {
   sort_order: number; visible: boolean;
 }
 
-const SETTING_KEYS: { key: string; labelKey: "appName" | "tagline" | "heroTitle" | "heroSub" | "heroBtnPrimary" | "heroBtnSecondary"; multiline?: boolean }[] = [
-  { key: "app_name", labelKey: "appName" },
-  { key: "tagline", labelKey: "tagline" },
-  { key: "hero_title", labelKey: "heroTitle" },
-  { key: "hero_sub", labelKey: "heroSub", multiline: true },
-  { key: "cta_primary", labelKey: "heroBtnPrimary" },
-  { key: "cta_secondary", labelKey: "heroBtnSecondary" },
+const SETTING_KEYS: { key: string; label: string; multiline?: boolean }[] = [
+  { key: "app_name", label: "نام سایت" },
+  { key: "tagline", label: "عبارت کوتاه بالای معرفی" },
+  { key: "hero_title", label: "عنوان اصلی" },
+  { key: "hero_sub", label: "توضیح معرفی", multiline: true },
+  { key: "hero_image_alt", label: "توضیح تصویر اصلی" },
+  { key: "cta_primary", label: "متن دکمه شروع" },
+  { key: "cta_secondary", label: "متن دکمه مسیر آموزشی" },
+  { key: "courses_eyebrow", label: "عبارت کوتاه بخش پایه‌ها" },
+  { key: "courses_title", label: "عنوان بخش پایه‌ها" },
+  { key: "featured_eyebrow", label: "عبارت کوتاه محتوای ویژه" },
+  { key: "journey_title", label: "عنوان دعوت به مسیر آموزشی" },
+  { key: "journey_body", label: "توضیح مسیر آموزشی", multiline: true },
+  { key: "journey_cta", label: "متن دکمه مسیر آموزشی" },
+  { key: "stat_courses", label: "برچسب آمار پایه‌ها" },
+  { key: "stat_books", label: "برچسب آمار کتاب‌ها" },
+  { key: "stat_access", label: "برچسب آمار دسترسی" },
+  { key: "footer_text", label: "توضیح پایین صفحه" },
+  { key: "footer_copyright", label: "متن حقوق پایین صفحه" },
 ];
 
 function HomepageEditor() {
@@ -123,7 +135,7 @@ function HomepageEditor() {
           {SETTING_KEYS.map(s => (
             <SettingRow
               key={s.key}
-              labelText={t(s.labelKey)}
+               labelText={s.label}
               setting={settings.get(s.key)}
               multiline={s.multiline}
               onSave={(fa, en, ar) => saveSetting(s.key, fa, en, ar)}
@@ -148,7 +160,7 @@ function HomepageEditor() {
                 <div>
                   <div className="font-semibold">{b.title_fa || b.title_en || b.title_ar || "—"}</div>
                   <div className="text-xs text-muted-foreground">
-                    {b.kind === "feature" ? t("kindFeature") : t("kindCustom")} · #{b.sort_order} {b.icon ? `· ${b.icon}` : ""}
+                   {b.kind === "feature" ? "ویژگی کوتاه" : "محتوای ویژه"} · #{b.sort_order} {b.icon ? `· ${b.icon}` : ""}
                   </div>
                 </div>
               </div>
@@ -311,8 +323,8 @@ function BlockDialog({ block, children, onSaved }: { block?: Block; children: Re
               <Select value={kind} onValueChange={setKind}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="feature">{t("kindFeature")}</SelectItem>
-                  <SelectItem value="custom">{t("kindCustom")}</SelectItem>
+                   <SelectItem value="feature">ویژگی کوتاه زیر تصویر اصلی</SelectItem>
+                   <SelectItem value="custom">محتوای ویژه</SelectItem>
                 </SelectContent>
               </Select>
             </div>
