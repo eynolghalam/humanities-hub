@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 import { useState } from "react";
-import { listCoursesWithProgress, getCourseJourney } from "@/lib/journey.functions";
+import { computeCoursesWithProgress, computeCourseJourney } from "@/lib/journey.functions";
 import { useI18n } from "@/lib/i18n";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
