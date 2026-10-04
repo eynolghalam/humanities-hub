@@ -15,10 +15,11 @@ export const Route = createFileRoute("/_authenticated/journey")({
 
 function JourneyPage() {
   const { t } = useI18n();
-  const listFn = useServerFn(listCoursesWithProgress);
+  const { user } = useAuth();
   const { data: courses } = useQuery({
-    queryKey: ["journey-courses"],
-    queryFn: () => listFn(),
+    queryKey: ["journey-courses", user?.id],
+    enabled: !!user,
+    queryFn: () => computeCoursesWithProgress(supabase, user!.id),
   });
   const [selected, setSelected] = useState<string | null>(null);
   const activeId = selected ?? courses?.[0]?.id ?? null;
@@ -71,10 +72,11 @@ function JourneyPage() {
 
 function JourneyTree({ courseId }: { courseId: string }) {
   const { t } = useI18n();
-  const fn = useServerFn(getCourseJourney);
+  const { user } = useAuth();
   const { data } = useQuery({
     queryKey: ["journey", courseId],
-    queryFn: () => fn({ data: { courseId } }),
+    enabled: !!user,
+    queryFn: () => computeCourseJourney(supabase, user!.id, { courseId }),
   });
   if (!data) return null;
   return (
