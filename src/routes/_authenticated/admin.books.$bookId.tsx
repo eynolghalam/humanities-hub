@@ -361,6 +361,7 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
 
   // book-text mode state
   const [bookStartUrl, setBookStartUrl] = useState("");
+  const [bookEndUrl, setBookEndUrl] = useState("");
   const [bookMaxPages, setBookMaxPages] = useState(50);
   const [bookSaveMode, setBookSaveMode] = useState<"combined" | "perPage" | "smart">("combined");
   const [bookLessonTitle, setBookLessonTitle] = useState("");
@@ -428,17 +429,27 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
       const collected: typeof bookPages = [];
       let nextUrl: string | null = bookStartUrl.trim();
       let title = "";
-      const cap = Math.min(bookMaxPages, 500);
-      while (nextUrl && collected.length < cap) {
+      const norm = (u: string) => u.trim().replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "").toLowerCase();
+      const endKey = bookEndUrl.trim() ? norm(bookEndUrl) : null;
+      const endNum = endKey ? Number(endKey.split("/").pop()) : NaN;
+      const startNum = Number(norm(bookStartUrl).split("/").pop());
+      const cap = endKey ? 500 : Math.min(bookMaxPages, 500);
+      const total = endKey && !isNaN(endNum) && !isNaN(startNum) && endNum >= startNum ? endNum - startNum + 1 : cap;
+      let reachedEnd = false;
+      while (nextUrl && collected.length < cap && !reachedEnd) {
         const remaining = cap - collected.length;
         const res: { bookTitle: string; pages: typeof bookPages; nextUrl: string | null } =
           await fetchBookPagesFn({ data: { startUrl: nextUrl, limit: Math.min(remaining, 15) } });
         if (!title) title = res.bookTitle;
-        collected.push(...res.pages);
-        setProgress({ done: collected.length, total: cap });
+        for (const p of res.pages) {
+          collected.push(p);
+          if (endKey && norm(p.url) === endKey) { reachedEnd = true; break; }
+        }
+        setProgress({ done: collected.length, total });
         if (!res.nextUrl || res.pages.length === 0) { nextUrl = null; break; }
         nextUrl = res.nextUrl;
       }
+      if (endKey && !reachedEnd) toast.warning("صفحه پایان پیدا نشد؛ صفحات تا انتهای قابل دسترس استخراج شد");
       setBookFetchedTitle(title);
       setBookPages(collected);
       if (!bookLessonTitle && title) setBookLessonTitle(title);
@@ -643,7 +654,11 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
               <div className="space-y-2">
                 <Label>آدرس صفحه شروع کتاب (مثال: https://darsgoftar.net/book/view/6/6/13/1)</Label>
                 <Input dir="ltr" value={bookStartUrl} onChange={e => setBookStartUrl(e.target.value)} placeholder="https://darsgoftar.net/book/view/.../.../.../1" />
-                <p className="text-xs text-muted-foreground">از این صفحه به بعد، صفحات پشت‌سرهم با دنبال کردن دکمه «صفحه بعد» استخراج می‌شوند.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>آدرس صفحه پایان (اختیاری)</Label>
+                <Input dir="ltr" value={bookEndUrl} onChange={e => setBookEndUrl(e.target.value)} placeholder="https://darsgoftar.net/book/view/.../.../.../25" />
+                <p className="text-xs text-muted-foreground">صفحات از صفحه شروع تا صفحه پایان (شامل خود آن) استخراج می‌شوند. اگر خالی بماند، از «حداکثر تعداد صفحات» استفاده می‌شود.</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
