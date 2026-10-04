@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 import { useState } from "react";
-import { listCoursesWithProgress, getCourseJourney } from "@/lib/journey.functions";
+import { computeCoursesWithProgress, computeCourseJourney } from "@/lib/journey.functions";
 import { useI18n } from "@/lib/i18n";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
@@ -14,10 +15,11 @@ export const Route = createFileRoute("/_authenticated/journey")({
 
 function JourneyPage() {
   const { t } = useI18n();
-  const listFn = useServerFn(listCoursesWithProgress);
+  const { user } = useAuth();
   const { data: courses } = useQuery({
-    queryKey: ["journey-courses"],
-    queryFn: () => listFn(),
+    queryKey: ["journey-courses", user?.id],
+    enabled: !!user,
+    queryFn: () => computeCoursesWithProgress(supabase, user!.id),
   });
   const [selected, setSelected] = useState<string | null>(null);
   const activeId = selected ?? courses?.[0]?.id ?? null;
@@ -70,10 +72,11 @@ function JourneyPage() {
 
 function JourneyTree({ courseId }: { courseId: string }) {
   const { t } = useI18n();
-  const fn = useServerFn(getCourseJourney);
+  const { user } = useAuth();
   const { data } = useQuery({
     queryKey: ["journey", courseId],
-    queryFn: () => fn({ data: { courseId } }),
+    enabled: !!user,
+    queryFn: () => computeCourseJourney(supabase, user!.id, { courseId }),
   });
   if (!data) return null;
   return (

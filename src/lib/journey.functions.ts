@@ -2,11 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export const getCourseJourney = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ courseId: z.string().uuid() }))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+type Sb = SupabaseClient<Database>;
+
+export async function computeCourseJourney(supabase: Sb, userId: string, data: { courseId: string }) {
+  {
     const { data: course } = await supabase
       .from("courses").select("id,title,description").eq("id", data.courseId).single();
     const { data: books } = await supabase
@@ -59,13 +60,17 @@ export const getCourseJourney = createServerFn({ method: "GET" })
       return { id: b.id, title: b.title, lessons: items, satisfiedByEquivalent };
     });
     return { course, books: bookGroups };
-  });
+  }
+}
 
-
-export const listCoursesWithProgress = createServerFn({ method: "GET" })
+export const getCourseJourney = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { supabase, userId } = context;
+  .inputValidator(z.object({ courseId: z.string().uuid() }))
+  .handler(async ({ data, context }) => computeCourseJourney(context.supabase, context.userId, data));
+
+
+export async function computeCoursesWithProgress(supabase: Sb, userId: string) {
+  {
     const { data: courses } = await supabase
       .from("courses").select("id,title,description,sort_order").order("sort_order");
     const out: Array<{ id: string; title: string; description: string | null; total: number; completed: number; percent: number }> = [];
@@ -104,4 +109,9 @@ export const listCoursesWithProgress = createServerFn({ method: "GET" })
       });
     }
     return out;
-  });
+  }
+}
+
+export const listCoursesWithProgress = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => computeCoursesWithProgress(context.supabase, context.userId));
