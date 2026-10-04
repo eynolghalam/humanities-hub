@@ -14,9 +14,10 @@ type Endpoint = {
   label: string;
 };
 
-async function buildChain(primaryModel: string): Promise<Endpoint[]> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function buildChain(primaryModel: string, userClient?: any): Promise<Endpoint[]> {
   const { loadAiSettings } = await import("./ai-settings.server");
-  const settings = await loadAiSettings();
+  const settings = await loadAiSettings(userClient);
 
   const lovable = process.env.LOVABLE_API_KEY;
   const openrouter = settings.openrouter_api_key || process.env.OPENROUTER_API_KEY;
@@ -53,9 +54,10 @@ async function buildChain(primaryModel: string): Promise<Endpoint[]> {
   return chain;
 }
 
-export async function callAIWithFallback(body: AIBody): Promise<any> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function callAIWithFallback(body: AIBody, userClient?: any): Promise<any> {
   const primaryModel = body.model ?? "google/gemini-2.5-flash";
-  const chain = await buildChain(primaryModel);
+  const chain = await buildChain(primaryModel, userClient);
   if (chain.length === 0) throw new Error("هیچ ارائه‌دهنده هوش مصنوعی پیکربندی نشده است.");
 
   let lastErr: Error | null = null;
@@ -79,7 +81,10 @@ export async function callAIWithFallback(body: AIBody): Promise<any> {
       lastErr = e instanceof Error ? e : new Error(String(e));
     }
   }
-  const detail = lastErr?.message ?? "unknown";
+  if (!lastErr) {
+    throw new Error("هیچ کلید هوش مصنوعی روی این سرور تنظیم نشده است. لطفاً در «تنظیمات هوش مصنوعی» پنل مدیریت کلید OpenRouter یا یک ارائه‌دهندهٔ دیگر وارد کنید، یا کلید LOVABLE_API_KEY را روی سرور تعریف کنید.");
+  }
+  const detail = lastErr.message;
   if (detail.includes("402")) {
     throw new Error("اعتبار هوش مصنوعی تمام شده و ارائه‌دهنده جایگزین رایگان پیکربندی نشده است. لطفاً در تنظیمات هوش مصنوعی یک ارائه‌دهنده رایگان اضافه کنید.");
   }

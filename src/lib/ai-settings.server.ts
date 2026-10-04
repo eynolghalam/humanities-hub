@@ -22,10 +22,16 @@ const DEFAULTS: AiSettings = {
   google_translate_fallback: true,
 };
 
-export async function loadAiSettings(): Promise<AiSettings> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function loadAiSettings(userClient?: any): Promise<AiSettings> {
   try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let client: any = userClient;
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY || !client) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      client = supabaseAdmin;
+    }
+    const { data } = await client
       .from("ai_settings")
       .select("openrouter_api_key,openrouter_models,custom_base_url,custom_api_key,custom_models,google_translate_fallback")
       .eq("id", true)
