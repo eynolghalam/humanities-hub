@@ -72,7 +72,7 @@ Return ONLY valid JSON matching the provided schema. Do not invent content; use 
         },
       ],
       tool_choice: { type: "function", function: { name: "save_lessons" } },
-    });
+    }, supabase);
 
     const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     if (!args) throw new Error("No structured output from AI");
@@ -145,7 +145,7 @@ Rules:
         },
       }],
       tool_choice: { type: "function", function: { name: "save_boundaries" } },
-    });
+    }, supabase);
     const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     if (!args) throw new Error("No structured output from AI");
     const parsed = JSON.parse(args);
