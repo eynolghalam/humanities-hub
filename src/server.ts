@@ -1,5 +1,13 @@
 import "./lib/error-capture";
 
+// Fallback for self-hosted deployments (e.g. hozatona.ir) where the server
+// process is started without SUPABASE_* env vars: reuse the public values
+// baked in at build time. These are publishable (non-secret) values.
+if (typeof process !== "undefined" && process.env) {
+  process.env.SUPABASE_URL ||= import.meta.env.VITE_SUPABASE_URL;
+  process.env.SUPABASE_PUBLISHABLE_KEY ||= import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+}
+
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
