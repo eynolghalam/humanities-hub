@@ -501,8 +501,38 @@ function ImportFromDarsgoftarDialog({ bookId, courseId, children, onSaved }: { b
         // Build a plain-text version aligned with what we send to the AI so
         // markers returned by the AI can be located by exact substring match.
         const plainText = combinedHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-        const { boundaries } = await detectBoundariesFn({ data: { text: combinedHtml } });
-        if (!boundaries?.length) throw new Error("هوش مصنوعی نتوانست فصل/درسی تشخیص دهد");
+        let boundaries: { title: string; start_marker: string }[] = [];
+        try {
+          const res = await detectBoundariesFn({ data: { text: combinedHtml } });
+          boundaries = res?.boundaries ?? [];
+        } catch (aiErr) {
+          console.warn("AI boundary detection failed, using local detection", aiErr);
+        }
+        if (!boundaries.length) {
+          // Local (no-AI) fallback: find headings such as فصل / باب / درس /
+          // الدرس / مقدمه in each page and use them as chapter starts.
+          const headingRe = /^(?:\s*)(فصل|الفصل|باب|الباب|درس|الدرس|بخش|گفتار|مقدمه|المقدمة|مقدّمه|پیشگفتار|پیش‌گفتار|سخن\s|دیباچه|خاتمه|الخاتمة|سرشناسه|فهرست)/;
+          const local: { title: string; start_marker: string }[] = [];
+          for (const p of pagesWithHtml) {
+            const doc = new DOMParser().parseFromString(p.html, "text/html");
+            const candidates = Array.from(doc.querySelectorAll("h1,h2,h3,h4,h5,strong,b,p,div"));
+            for (const el of candidates) {
+              const t = (el.textContent ?? "").replace(/\s+/g, " ").trim();
+              if (t.length < 3 || t.length > 120) continue;
+              const isHeadingTag = /^H[1-5]$/.test(el.tagName);
+              if (!headingRe.test(t) && !isHeadingTag) continue;
+              if (!headingRe.test(t) && isHeadingTag && t.length > 80) continue;
+              if (local.some(l => l.start_marker === t)) continue;
+              local.push({ title: t, start_marker: t });
+              break; // one chapter start per page is enough
+            }
+          }
+          boundaries = local;
+          if (!boundaries.length) {
+            throw new Error("هوش مصنوعی در دسترس نبود و در متن هم عنوان فصل/درسی پیدا نشد. از روش «یک درس» یا «هر صفحه یک درس» استفاده کنید.");
+          }
+          toast.info("هوش مصنوعی در دسترس نبود؛ فصل‌ها بر اساس عنوان‌های متن تشخیص داده شدند.");
+        }
 
         // Locate each marker's position in plainText. Search sequentially so
         // later chapters don't match earlier occurrences.
