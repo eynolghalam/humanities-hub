@@ -14,8 +14,8 @@ export const getAiSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdminOrOwner(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
+    // Admin/owner RLS on ai_settings allows this read — no service-role key needed (works on external Node hosts).
+    const { data } = await context.supabase
       .from("ai_settings")
       .select("openrouter_api_key,openrouter_models,custom_base_url,custom_api_key,custom_models,google_translate_fallback")
       .eq("id", true)
@@ -45,8 +45,6 @@ export const saveAiSettings = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data, context }) => {
     await requireAdminOrOwner(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
     const patch: Record<string, unknown> = { id: true, updated_at: new Date().toISOString() };
     if (data.openrouter_api_key !== undefined && data.openrouter_api_key !== "") {
       patch.openrouter_api_key = data.openrouter_api_key;
@@ -59,7 +57,7 @@ export const saveAiSettings = createServerFn({ method: "POST" })
     if (data.custom_base_url !== undefined) patch.custom_base_url = data.custom_base_url || null;
     if (data.google_translate_fallback !== undefined) patch.google_translate_fallback = data.google_translate_fallback;
 
-    const { error } = await supabaseAdmin.from("ai_settings").upsert(patch, { onConflict: "id" });
+    const { error } = await context.supabase.from("ai_settings").upsert(patch, { onConflict: "id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
