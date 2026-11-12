@@ -2,9 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function callAI(body: any) {
+// Pass the authenticated user client so AI settings (OpenRouter key etc.)
+// are readable even on self-hosted deployments without a service-role key.
+async function callAI(body: any, userClient?: any) {
   const { callAIWithFallback } = await import("./ai-fallback.server");
-  return callAIWithFallback(body);
+  return callAIWithFallback(body, userClient);
 }
 
 /* --------------------- Extract or generate exercises --------------------- */
@@ -73,7 +75,7 @@ export const extractOrGenerateExercises = createServerFn({ method: "POST" })
         },
       }],
       tool_choice: { type: "function", function: { name: "save_exercises" } },
-    });
+    }, supabase);
 
     const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     if (!args) throw new Error("خروجی AI نامعتبر");
@@ -165,7 +167,7 @@ export const gradeAnswer = createServerFn({ method: "POST" })
         },
       }],
       tool_choice: { type: "function", function: { name: "grade" } },
-    });
+    }, supabase);
 
     const args = aiJson.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     if (!args) throw new Error("خروجی AI نامعتبر");

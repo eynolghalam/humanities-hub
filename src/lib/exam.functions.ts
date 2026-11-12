@@ -2,9 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function callAI(body: any) {
+// Pass the authenticated user client so AI settings (OpenRouter key etc.)
+// are readable even on self-hosted deployments without a service-role key.
+async function callAI(body: any, userClient?: any) {
   const { callAIWithFallback } = await import("./ai-fallback.server");
-  return callAIWithFallback(body);
+  return callAIWithFallback(body, userClient);
 }
 
 type MinSupabase = { from: (t: "user_roles") => { select: (c: string) => { eq: (col: string, val: string) => Promise<{ data: Array<{ role: string }> | null }> } } };
@@ -40,14 +42,14 @@ export const translateLessonText = createServerFn({ method: "POST" })
           { role: "system", content: system },
           { role: "user", content: data.text },
         ],
-      });
+      }, context.supabase);
       const translated = String(json.choices?.[0]?.message?.content ?? "").trim();
       if (translated) return { translation: translated, provider: "ai" as const };
       throw new Error("empty");
     } catch (e) {
       // AI credits / limits exhausted → free Google Translate fallback
       const { loadAiSettings } = await import("./ai-settings.server");
-      const settings = await loadAiSettings();
+      const settings = await loadAiSettings(context.supabase);
       if (!settings.google_translate_fallback) throw e;
       const { googleTranslate } = await import("./google-translate.server");
       const out = await googleTranslate(data.text, data.targetLang);
@@ -86,7 +88,7 @@ export const translateBook = createServerFn({ method: "POST" })
 - فقط متن ترجمه‌شده را برگردان بدون هیچ توضیح اضافه.`;
 
     const { loadAiSettings } = await import("./ai-settings.server");
-    const settings = await loadAiSettings();
+    const settings = await loadAiSettings(supabase);
 
     let translated = 0;
     let skipped = 0;
@@ -116,7 +118,7 @@ export const translateBook = createServerFn({ method: "POST" })
                 { role: "system", content: system },
                 { role: "user", content: src.slice(0, 50_000) },
               ],
-            });
+            }, supabase);
             out = String(json.choices?.[0]?.message?.content ?? "").trim();
           } catch (aiErr) {
             const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
@@ -272,7 +274,7 @@ export const generateBookExamQuestions = createServerFn({ method: "POST" })
         },
       }],
       tool_choice: { type: "function", function: { name: "save_questions" } },
-    });
+    }, supabase);
     const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     if (!args) throw new Error("خروجی AI نامعتبر");
     const parsed = JSON.parse(args) as { questions: string[] };
@@ -346,7 +348,7 @@ export const answerBookExamFromFiles = createServerFn({ method: "POST" })
         { role: "system", content: "تو یک استاد علوم حوزوی هستی که از تصاویر برگه امتحانی، سوالات را می‌خوانی و از متن کتاب پاسخ کامل و منظم می‌دهی." },
         { role: "user", content: parts },
       ],
-    });
+    }, supabase);
     const answer = json.choices?.[0]?.message?.content ?? "";
     return {
       answer: String(answer),

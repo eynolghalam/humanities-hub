@@ -27,9 +27,22 @@ export async function loadAiSettings(userClient?: any): Promise<AiSettings> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let client: any = userClient;
-    if (process.env.SUPABASE_SERVICE_ROLE_KEY || !client) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      client = supabaseAdmin;
+    if (!client) {
+      if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        client = supabaseAdmin;
+      } else {
+        // Self-hosted deployments (e.g. hozatona.ir) have no service-role key.
+        // Fall back to an anon client built from the public values baked in at
+        // build time (server.ts backfills SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY
+        // from VITE_*). RLS still applies, so this only works for callers whose
+        // policies allow the read — prefer passing the authenticated user client.
+        const { createClient } = await import("@supabase/supabase-js");
+        const url = process.env.SUPABASE_URL;
+        const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+        if (!url || !key) return DEFAULTS;
+        client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+      }
     }
     const { data } = await client
       .from("ai_settings")

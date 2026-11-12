@@ -74,7 +74,7 @@ export const testAiProviders = createServerFn({ method: "POST" })
       const json = await callAIWithFallback({
         model: "google/gemini-2.5-flash",
         messages: [{ role: "user", content: "بگو: سلام" }],
-      });
+      }, context.supabase);
       return { ok: true as const, reply: String(json.choices?.[0]?.message?.content ?? "").slice(0, 200) };
     } catch (e) {
       return { ok: false as const, error: e instanceof Error ? e.message : String(e) };
