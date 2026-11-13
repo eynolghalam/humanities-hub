@@ -2,6 +2,11 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { Menu, Palette, Check } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useTheme } from "@/hooks/use-theme";
+import { themeNames } from "@/lib/theme";
+import { useState } from "react";
 import { BookOpen, LogOut, Shield, Languages, GraduationCap, Map, BarChart3, MessageCircleQuestion } from "lucide-react";
 import { StatsBar } from "@/components/StatsBar";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -22,6 +27,8 @@ export function Header() {
   const { t, lang, setLang } = useI18n();
   const { user, isAdmin, isTeacher, signOut } = useAuth();
   const navigate = useNavigate();
+  const { currentTheme, setTheme } = useTheme();
+  const [open, setOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -38,7 +45,54 @@ export function Header() {
           <span className="text-lg font-extrabold tracking-tight">{t("appName")}</span>
         </Link>
 
-        <nav className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:hidden">
+          {user && <StatsBar />}
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="منو"><Menu className="h-5 w-5" /></Button>
+            </SheetTrigger>
+            <SheetContent side={lang === "en" ? "right" : "left"} className="w-72 overflow-y-auto">
+              <SheetHeader><SheetTitle>{t("appName")}</SheetTitle></SheetHeader>
+              <div className="mt-6 space-y-6">
+                {(isAdmin || isTeacher) && (
+                  <Link to="/admin" onClick={() => setOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl bg-primary/10 px-3 font-semibold text-primary">
+                    {isAdmin ? <Shield className="h-5 w-5" /> : <GraduationCap className="h-5 w-5" />}
+                    {isAdmin ? t("managePanel") : t("teacherPanel")}
+                  </Link>
+                )}
+                <section>
+                  <h3 className="mb-2 flex items-center gap-2 text-xs font-bold text-muted-foreground"><Palette className="h-4 w-4" />انتخاب تم</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {themeNames.map(th => (
+                      <button key={th.name} onClick={() => setTheme(th.name)} className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm ${currentTheme === th.name ? "border-primary bg-primary/10 font-semibold" : "border-border"}`}>
+                        <span>{th.emoji}</span><span className="truncate">{th.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+                <section>
+                  <h3 className="mb-2 flex items-center gap-2 text-xs font-bold text-muted-foreground"><Languages className="h-4 w-4" />زبان</h3>
+                  <div className="space-y-1">
+                    {LANGS.map(l => (
+                      <button key={l.code} onClick={() => setLang(l.code)} className={`flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-sm ${lang === l.code ? "bg-accent font-semibold" : "hover:bg-muted"}`}>
+                        {l.label}{lang === l.code && <Check className="h-4 w-4 text-primary" />}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+                {user ? (
+                  <Button variant="outline" className="w-full gap-2 text-destructive" onClick={() => { setOpen(false); handleSignOut(); }}>
+                    <LogOut className="h-4 w-4" />{t("logout")}
+                  </Button>
+                ) : (
+                  <Link to="/auth" onClick={() => setOpen(false)}><Button className="w-full bg-hero text-primary-foreground">{t("login")}</Button></Link>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        <nav className="hidden items-center gap-2 md:flex">
           {user && <StatsBar />}
           {user && (
             <Link to="/courses">
