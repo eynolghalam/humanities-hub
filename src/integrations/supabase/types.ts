@@ -876,12 +876,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_exercise_for_grading: {
+        Args: { _exercise_id: string }
+        Returns: {
+          exercise_type: string
+          expected_answer: string
+          id: string
+          lesson_id: string
+          question: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      record_graded_attempt: {
+        Args: {
+          _correct_answer: string
+          _exercise_id: string
+          _feedback: string
+          _is_correct: boolean
+          _score: number
+          _user_answer: string
+        }
+        Returns: Json
       }
       teacher_has_book_access: {
         Args: { _book_id: string; _user_id: string }

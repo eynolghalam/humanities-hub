@@ -103,7 +103,6 @@ export const extractOrGenerateExercises = createServerFn({ method: "POST" })
   });
 
 /* --------------------- Grade answer + gamification --------------------- */
-const todayStr = () => new Date().toISOString().slice(0, 10);
 
 export const gradeAnswer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -112,27 +111,12 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     userAnswer: z.string().min(1).max(5000),
   }))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
 
-    // expected_answer is column-restricted — fetch via admin client so students never read it via the Data API
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: ex, error: eerr } = await supabaseAdmin
-      .from("lesson_exercises")
-      .select("id,lesson_id,question,expected_answer,exercise_type,options")
-      .eq("id", data.exerciseId)
-      .single();
+    // expected_answer is column-restricted — read via SECURITY DEFINER RPC (no service role needed)
+    const { data: exRows, error: eerr } = await supabase.rpc("get_exercise_for_grading", { _exercise_id: data.exerciseId });
+    const ex = Array.isArray(exRows) ? exRows[0] : null;
     if (eerr || !ex) throw new Error("سوال یافت نشد");
-
-    // Ensure stats row exists; check hearts (writes via admin — client cannot write user_stats)
-    const { data: existingStats } = await supabaseAdmin
-      .from("user_stats").select("*").eq("user_id", userId).maybeSingle();
-    let stats = existingStats;
-    if (!stats) {
-      const { data: created } = await supabaseAdmin.from("user_stats").insert({ user_id: userId }).select("*").single();
-      stats = created;
-    }
-    if (!stats) throw new Error("خطا در ساخت آمار");
-    // Hearts have no cap — no ceiling and no depletion barrier.
 
     // Ask AI to grade. Treat user answer as untrusted opaque data.
     const safeAnswer = data.userAnswer.replace(/<\/?student_answer>/gi, "").slice(0, 5000);
@@ -172,7 +156,6 @@ export const gradeAnswer = createServerFn({ method: "POST" })
     const args = aiJson.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     if (!args) throw new Error("خروجی AI نامعتبر");
     const rawGrade = JSON.parse(args) as { is_correct: boolean; score: number; feedback: string; correct_answer: string };
-    // Server-side clamp/sanity
     const grade = {
       is_correct: !!rawGrade.is_correct,
       score: Math.max(0, Math.min(100, Math.round(Number(rawGrade.score) || 0))),
@@ -180,98 +163,26 @@ export const gradeAnswer = createServerFn({ method: "POST" })
       correct_answer: String(rawGrade.correct_answer ?? "").slice(0, 2000),
     };
 
-    // XP
-    const xp = grade.is_correct ? (grade.score >= 90 ? 15 : 10) : 0;
-
-    // Record attempt via service role to prevent client-side XP/score forgery
-    await supabaseAdmin.from("user_exercise_attempts").insert({
-      user_id: userId,
-      exercise_id: ex.id,
-      user_answer: data.userAnswer,
-      is_correct: grade.is_correct,
-      score: Math.round(grade.score),
-      ai_feedback: grade.feedback,
-      correct_answer: grade.correct_answer,
-      xp_awarded: xp,
+    // XP, stats, lesson progress and achievements are computed inside the DB (auth.uid()-scoped)
+    const { data: rec, error: rerr } = await supabase.rpc("record_graded_attempt", {
+      _exercise_id: ex.id,
+      _user_answer: data.userAnswer,
+      _is_correct: grade.is_correct,
+      _score: grade.score,
+      _feedback: grade.feedback,
+      _correct_answer: grade.correct_answer,
     });
+    if (rerr) throw new Error(rerr.message);
+    const r = (rec ?? {}) as { xp_awarded?: number; lesson_completed?: boolean; hearts?: number; streak?: number; total_xp?: number };
 
-    // Update stats: streak, hearts, xp, league
-    const today = todayStr();
-    const last = stats.last_activity_date as string | null;
-    let newStreak = stats.current_streak;
-    if (grade.is_correct) {
-      if (last === today) {
-        /* same day, keep */
-      } else {
-        const yest = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-        newStreak = last === yest ? stats.current_streak + 1 : 1;
-      }
-    }
-    // Hearts uncapped: grow on correct, never deplete on wrong.
-    const newHearts = grade.is_correct ? stats.hearts + 1 : stats.hearts;
-    const newTotalXP = stats.total_xp + xp;
-    const newWeeklyXP = stats.weekly_xp + xp;
-    const league = newTotalXP >= 5000 ? "diamond" : newTotalXP >= 2000 ? "gold" : newTotalXP >= 500 ? "silver" : "bronze";
-
-    await supabaseAdmin.from("user_stats").update({
-      total_xp: newTotalXP,
-      weekly_xp: newWeeklyXP,
-      current_streak: newStreak,
-      longest_streak: Math.max(stats.longest_streak, newStreak),
-      hearts: newHearts,
-      hearts_refill_at: null,
-      last_activity_date: grade.is_correct ? today : stats.last_activity_date,
-      league,
-    }).eq("user_id", userId);
-
-    // Lesson progress: if all exercises of this lesson are correct → completed
-    const { data: allEx } = await supabase
-      .from("lesson_exercises").select("id").eq("lesson_id", ex.lesson_id);
-    const exIds = (allEx ?? []).map(e => e.id);
-    let lessonCompleted = false;
-    if (exIds.length > 0) {
-      const { data: attempts } = await supabase
-        .from("user_exercise_attempts")
-        .select("exercise_id,is_correct,created_at")
-        .eq("user_id", userId)
-        .in("exercise_id", exIds);
-      const bestByEx = new Map<string, boolean>();
-      (attempts ?? []).forEach(a => {
-        if (a.is_correct) bestByEx.set(a.exercise_id, true);
-        else if (!bestByEx.has(a.exercise_id)) bestByEx.set(a.exercise_id, false);
-      });
-      lessonCompleted = exIds.every(id => bestByEx.get(id) === true);
-    }
-
-    if (lessonCompleted) {
-      const { data: prog } = await supabaseAdmin
-        .from("user_lesson_progress").select("*").eq("user_id", userId).eq("lesson_id", ex.lesson_id).maybeSingle();
-      if (!prog || prog.status !== "completed") {
-        const bonusXP = 20;
-        await supabaseAdmin.from("user_lesson_progress").upsert({
-          user_id: userId,
-          lesson_id: ex.lesson_id,
-          status: "completed",
-          xp_earned: (prog?.xp_earned ?? 0) + bonusXP,
-          completed_at: new Date().toISOString(),
-        }, { onConflict: "user_id,lesson_id" });
-        await supabaseAdmin.from("user_stats").update({ total_xp: newTotalXP + bonusXP, weekly_xp: newWeeklyXP + bonusXP }).eq("user_id", userId);
-      }
-    }
-
-    // Achievements
-    const badges: string[] = [];
-    if (lessonCompleted) badges.push("first_lesson");
-    if (newStreak >= 7) badges.push("streak_7");
-    if (newStreak >= 30) badges.push("streak_30");
-    if (newTotalXP >= 100) badges.push("xp_100");
-    if (newTotalXP >= 1000) badges.push("xp_1000");
-    if (newTotalXP >= 5000) badges.push("xp_5000");
-    for (const b of badges) {
-      await supabaseAdmin.from("user_achievements").insert({ user_id: userId, badge_key: b }).then(() => {}, () => {});
-    }
-
-    return { ...grade, xp_awarded: xp, lesson_completed: lessonCompleted, hearts: newHearts, streak: newStreak, total_xp: newTotalXP };
+    return {
+      ...grade,
+      xp_awarded: r.xp_awarded ?? 0,
+      lesson_completed: !!r.lesson_completed,
+      hearts: r.hearts ?? 0,
+      streak: r.streak ?? 0,
+      total_xp: r.total_xp ?? 0,
+    };
   });
 
 /* --------------------- Get user stats --------------------- */
