@@ -10,6 +10,7 @@ import { useState } from "react";
 import { BookOpen, LogOut, Shield, Languages, GraduationCap, Map, BarChart3, MessageCircleQuestion } from "lucide-react";
 import { StatsBar } from "@/components/StatsBar";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { InstallApp } from "@/components/InstallApp";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,6 +81,7 @@ export function Header() {
                     ))}
                   </div>
                 </section>
+                <InstallApp />
                 {user ? (
                   <Button variant="outline" className="w-full gap-2 text-destructive" onClick={() => { setOpen(false); handleSignOut(); }}>
                     <LogOut className="h-4 w-4" />{t("logout")}

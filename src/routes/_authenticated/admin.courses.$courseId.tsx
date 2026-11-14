@@ -12,12 +12,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, ChevronLeft, BookOpen, Tag } from "lucide-react";
+import { BookCover } from "@/components/BookCover";
 
 export const Route = createFileRoute("/_authenticated/admin/courses/$courseId")({
+  head: () => ({ meta: [
+    { title: "مدیریت کتاب‌ها و جلد | حوزتنا" },
+    { name: "description", content: "مدیریت کتاب‌ها و بارگذاری تصویر جلد کتاب در حوزتنا." },
+    { property: "og:title", content: "مدیریت کتاب‌ها و جلد | حوزتنا" },
+    { property: "og:description", content: "ویرایش کتاب‌ها و جلد آن‌ها در پنل حوزتنا." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+  ] }),
   component: ManageBooks,
 });
 
-interface Book { id: string; course_id: string; title: string; description: string | null; sort_order: number; category_id: string | null }
+interface Book { id: string; course_id: string; title: string; description: string | null; sort_order: number; category_id: string | null; cover_path: string | null }
 interface Category { id: string; course_id: string; title: string; sort_order: number }
 
 function ManageBooks() {
@@ -84,7 +92,10 @@ function ManageBooks() {
   });
 
   const invalidateCats = () => qc.invalidateQueries({ queryKey: ["admin-cats", courseId] });
-  const invalidateBooks = () => qc.invalidateQueries({ queryKey: ["admin-books", courseId] });
+  const invalidateBooks = () => {
+    qc.invalidateQueries({ queryKey: ["admin-books", courseId] });
+    qc.invalidateQueries({ queryKey: ["course", courseId] });
+  };
 
   const deleteBook = async (id: string) => {
     if (!confirm(t("confirmDelete"))) return;
@@ -105,14 +116,14 @@ function ManageBooks() {
   (books ?? []).forEach(b => {
     const key = b.category_id ?? null;
     if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key)!.push(b);
+    grouped.get(key)?.push(b);
   });
 
   const renderBook = (b: Book, i: number) => (
-    <div key={b.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{i + 1}</div>
-        <div>
+    <div key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
+      <div className="flex min-w-0 items-center gap-3">
+        <BookCover path={b.cover_path} title={b.title} />
+        <div className="min-w-0">
           <div className="font-semibold">{b.title}</div>
           {b.description && <div className="text-xs text-muted-foreground line-clamp-1">{b.description}</div>}
         </div>
@@ -162,7 +173,7 @@ function ManageBooks() {
         <div className="mb-6 rounded-2xl border border-border bg-card-soft p-4">
           <h2 className="mb-3 text-sm font-bold text-muted-foreground">{t("manageCategories")}</h2>
           <div className="flex flex-wrap gap-2">
-            {categories!.map(c => (
+            {categories?.map(c => (
               <div key={c.id} className="flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1 text-sm">
                 <Tag className="h-3 w-3 text-primary" />
                 <span>{c.title}</span>
@@ -194,7 +205,7 @@ function ManageBooks() {
         {(grouped.get(null)?.length ?? 0) > 0 && (
           <div>
             <h3 className="mb-3 text-sm font-bold text-muted-foreground">{t("uncategorized")}</h3>
-            <div className="space-y-3">{grouped.get(null)!.map((b, i) => renderBook(b, i))}</div>
+            <div className="space-y-3">{grouped.get(null)?.map((b, i) => renderBook(b, i))}</div>
           </div>
         )}
         {books?.length === 0 && (
@@ -214,26 +225,72 @@ function BookDialog({ courseId, categories, book, children, onSaved }: { courseI
   const [categoryId, setCategoryId] = useState<string | null>(book?.category_id ?? null);
   const [saving, setSaving] = useState(false);
 
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [removeCover, setRemoveCover] = useState(false);
+  const [savedBookId, setSavedBookId] = useState(book?.id ?? null);
+  useEffect(() => {
+    if (!coverFile) { setPreview(null); return; }
+    const url = URL.createObjectURL(coverFile);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [coverFile]);
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const payload = { course_id: courseId, title, description, sort_order: sortOrder, category_id: categoryId };
-    const { error } = book
-      ? await supabase.from("books").update(payload).eq("id", book.id)
-      : await supabase.from("books").insert(payload);
-    setSaving(false);
-    if (error) toast.error(error.message);
-    else { toast.success("OK"); onSaved(); setOpen(false); }
+    let uploadedPath: string | null = null;
+    try {
+      const payload = { course_id: courseId, title, description, sort_order: sortOrder, category_id: categoryId };
+      const result = savedBookId
+        ? await supabase.from("books").update(payload).eq("id", savedBookId).select("id").single()
+        : await supabase.from("books").insert(payload).select("id").single();
+      if (result.error) throw result.error;
+      const id = result.data.id;
+      setSavedBookId(id);
+      let path = removeCover ? null : book?.cover_path ?? null;
+      if (coverFile) {
+        const extension = coverFile.type === "image/png" ? "png" : coverFile.type === "image/webp" ? "webp" : "jpg";
+        uploadedPath = `${id}/${crypto.randomUUID()}.${extension}`;
+        const { error } = await supabase.storage.from("book-covers").upload(uploadedPath, coverFile, { contentType: coverFile.type });
+        if (error) throw error;
+        path = uploadedPath;
+      }
+      const { error } = await supabase.from("books").update({ cover_path: path }).eq("id", id).select("id").single();
+      if (error) throw error;
+      if (book?.cover_path && book.cover_path !== path) await supabase.storage.from("book-covers").remove([book.cover_path]);
+      toast.success("کتاب ذخیره شد");
+      onSaved();
+      setCoverFile(null); setRemoveCover(false); setOpen(false);
+      if (!book) { setSavedBookId(null); setTitle(""); setDescription(""); }
+    } catch (error) {
+      if (uploadedPath) await supabase.storage.from("book-covers").remove([uploadedPath]);
+      onSaved();
+      toast.error(error instanceof Error ? error.message : "ذخیرهٔ کتاب یا جلد انجام نشد؛ دوباره تلاش کنید.");
+    } finally { setSaving(false); }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{book ? t("editBook") : t("addBook")}</DialogTitle></DialogHeader>
         <form onSubmit={save} className="space-y-4">
           <div className="space-y-2"><Label>{t("title")}</Label><Input required value={title} onChange={e => setTitle(e.target.value)} /></div>
           <div className="space-y-2"><Label>{t("bookDesc")}</Label><Textarea value={description ?? ""} onChange={e => setDescription(e.target.value)} /></div>
+          <div className="space-y-3">
+            <Label htmlFor={`cover-${book?.id ?? "new"}`}>تصویر جلد کتاب</Label>
+            {preview ? <img src={preview} alt="پیش‌نمایش جلد کتاب" className="h-32 w-24 rounded-md border border-border object-contain" /> : !removeCover && book?.cover_path ? <BookCover path={book.cover_path} title={title} /> : null}
+            <Input id={`cover-${book?.id ?? "new"}`} type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} onChange={e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+                toast.error("تصویر JPG، PNG یا WebP تا ۵ مگابایت انتخاب کنید."); e.target.value = ""; return;
+              }
+              setCoverFile(file); setRemoveCover(false);
+            }} />
+            {(coverFile || (book?.cover_path && !removeCover)) && <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={() => { setCoverFile(null); setRemoveCover(true); }}>حذف جلد</Button>}
+          </div>
           <div className="space-y-2">
             <Label>{t("category")}</Label>
             <Select value={categoryId ?? "__none"} onValueChange={v => setCategoryId(v === "__none" ? null : v)}>

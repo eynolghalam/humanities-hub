@@ -8,6 +8,13 @@
       "when": 1794579931442,
       "tag": "0000_grading_rpcs",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794623214047,
+      "tag": "0001_book_cover_uploads",
+      "breakpoints": true
     }
   ]
 }

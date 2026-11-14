@@ -7,8 +7,16 @@ import { Button } from "@/components/ui/button";
 import { CourseProgressBar } from "@/components/ProgressInline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { BreadcrumbNav } from "@/components/BreadcrumbNav";
+import { BookCover } from "@/components/BookCover";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
+  head: () => ({ meta: [
+    { title: "کتاب‌های پایه | حوزتنا" },
+    { name: "description", content: "کتاب‌ها و جلدهای کتاب‌های این پایهٔ آموزشی در حوزتنا." },
+    { property: "og:title", content: "کتاب‌های پایه | حوزتنا" },
+    { property: "og:description", content: "کتاب‌های پایه و پیشرفت تحصیلی در حوزتنا." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+  ] }),
   component: CourseDetail,
 });
 
@@ -32,24 +40,24 @@ function CourseDetail() {
         .order("sort_order");
       const { data: books } = await supabase
         .from("books")
-        .select("id,title,description,sort_order,category_id")
+        .select("id,title,description,sort_order,category_id,cover_path")
         .eq("course_id", courseId)
         .order("sort_order");
       return { course, categories: cats ?? [], books: books ?? [] };
     },
   });
 
-  const renderBook = (b: { id: string; title: string; description: string | null }, i: number) => (
+  const renderBook = (b: { id: string; title: string; description: string | null; cover_path: string | null }, i: number) => (
     <Link
       key={b.id}
       to="/books/$bookId"
       params={{ bookId: b.id }}
       className="group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition hover:border-primary hover:shadow-soft"
     >
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{i + 1}</div>
-        <div>
-          <div className="font-semibold">{b.title}</div>
+      <div className="flex min-w-0 items-center gap-4">
+        <BookCover path={b.cover_path} title={b.title} />
+        <div className="min-w-0">
+          <div className="break-words font-semibold">{b.title}</div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <BookOpen className="h-3 w-3" />{t("book")}
           </div>
@@ -59,12 +67,12 @@ function CourseDetail() {
     </Link>
   );
 
-  type BookRow = { id: string; title: string; description: string | null; sort_order: number; category_id: string | null };
+  type BookRow = { id: string; title: string; description: string | null; sort_order: number; category_id: string | null; cover_path: string | null };
   const grouped = new Map<string | null, BookRow[]>();
   (data?.books ?? []).forEach(b => {
     const key = b.category_id ?? null;
     if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key)!.push(b);
+    grouped.get(key)?.push(b);
   });
 
   return (
@@ -136,7 +144,7 @@ function CourseDetail() {
             {(data?.categories.length ?? 0) > 0 && (
               <h3 className="mb-3 text-base font-bold text-muted-foreground">{t("uncategorized")}</h3>
             )}
-            <div className="grid gap-3 sm:grid-cols-2">{grouped.get(null)!.map((b, i) => renderBook(b, i))}</div>
+            <div className="grid gap-3 sm:grid-cols-2">{grouped.get(null)?.map((b, i) => renderBook(b, i))}</div>
           </section>
         )}
       </div>
