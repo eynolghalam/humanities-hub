@@ -11,6 +11,8 @@ import { BookOpen, LogOut, Shield, Languages, GraduationCap, Map, BarChart3, Mes
 import { StatsBar } from "@/components/StatsBar";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { InstallApp } from "@/components/InstallApp";
+import { SiteLogo } from '@/components/SiteLogo';
+import { Sparkles } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,9 +42,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 font-bold">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-hero shadow-soft">
-            <BookOpen className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <SiteLogo />
           <span className="text-lg font-extrabold tracking-tight">{t("appName")}</span>
         </Link>
 
@@ -95,6 +95,7 @@ export function Header() {
         </div>
 
         <nav className="hidden items-center gap-2 md:flex">
+          <Button asChild variant="ghost" size="sm" className="gap-1.5"><Link to={user ? '/ask' : '/auth'}><Sparkles className="h-4 w-4" />پاسخ‌یار</Link></Button>
           {user && <StatsBar />}
           {user && (
             <Link to="/courses">

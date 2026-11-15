@@ -15,9 +15,13 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AuthenticatedAskRouteImport } from './routes/_authenticated/ask'
 import { Route as AuthenticatedJourneyRouteImport } from './routes/_authenticated/journey'
 import { Route as AuthenticatedQuestionsRouteImport } from './routes/_authenticated/questions'
 import { Route as AuthenticatedStatsRouteImport } from './routes/_authenticated/stats'
+import { Route as ApiAnswerRouteImport } from './routes/api/answer'
+import { Route as ApiAppManifestRouteImport } from './routes/api/app-manifest'
+import { Route as ApiBrandIconRouteImport } from './routes/api/brand-icon'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
@@ -65,6 +69,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedAskRoute = AuthenticatedAskRouteImport.update({
+  id: '/ask',
+  path: '/ask',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedJourneyRoute = AuthenticatedJourneyRouteImport.update({
   id: '/journey',
   path: '/journey',
@@ -79,6 +88,21 @@ const AuthenticatedStatsRoute = AuthenticatedStatsRouteImport.update({
   id: '/stats',
   path: '/stats',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiAnswerRoute = ApiAnswerRouteImport.update({
+  id: '/api/answer',
+  path: '/api/answer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAppManifestRoute = ApiAppManifestRouteImport.update({
+  id: '/api/app-manifest',
+  path: '/api/app-manifest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBrandIconRoute = ApiBrandIconRouteImport.update({
+  id: '/api/brand-icon',
+  path: '/api/brand-icon',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
@@ -172,9 +196,13 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/ask': typeof AuthenticatedAskRoute
   '/journey': typeof AuthenticatedJourneyRoute
   '/questions': typeof AuthenticatedQuestionsRoute
   '/stats': typeof AuthenticatedStatsRoute
+  '/api/answer': typeof ApiAnswerRoute
+  '/api/app-manifest': typeof ApiAppManifestRoute
+  '/api/brand-icon': typeof ApiBrandIconRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -197,9 +225,13 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/ask': typeof AuthenticatedAskRoute
   '/journey': typeof AuthenticatedJourneyRoute
   '/questions': typeof AuthenticatedQuestionsRoute
   '/stats': typeof AuthenticatedStatsRoute
+  '/api/answer': typeof ApiAnswerRoute
+  '/api/app-manifest': typeof ApiAppManifestRoute
+  '/api/brand-icon': typeof ApiBrandIconRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -224,9 +256,13 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/_authenticated/ask': typeof AuthenticatedAskRoute
   '/_authenticated/journey': typeof AuthenticatedJourneyRoute
   '/_authenticated/questions': typeof AuthenticatedQuestionsRoute
   '/_authenticated/stats': typeof AuthenticatedStatsRoute
+  '/api/answer': typeof ApiAnswerRoute
+  '/api/app-manifest': typeof ApiAppManifestRoute
+  '/api/brand-icon': typeof ApiBrandIconRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -251,9 +287,13 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/ask'
     | '/journey'
     | '/questions'
     | '/stats'
+    | '/api/answer'
+    | '/api/app-manifest'
+    | '/api/brand-icon'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/ai'
@@ -276,9 +316,13 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/ask'
     | '/journey'
     | '/questions'
     | '/stats'
+    | '/api/answer'
+    | '/api/app-manifest'
+    | '/api/brand-icon'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/ai'
@@ -302,9 +346,13 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/_authenticated/ask'
     | '/_authenticated/journey'
     | '/_authenticated/questions'
     | '/_authenticated/stats'
+    | '/api/answer'
+    | '/api/app-manifest'
+    | '/api/brand-icon'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/ai'
@@ -329,6 +377,9 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ApiAnswerRoute: typeof ApiAnswerRoute
+  ApiAppManifestRoute: typeof ApiAppManifestRoute
+  ApiBrandIconRoute: typeof ApiBrandIconRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -377,6 +428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/ask': {
+      id: '/_authenticated/ask'
+      path: '/ask'
+      fullPath: '/ask'
+      preLoaderRoute: typeof AuthenticatedAskRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/journey': {
       id: '/_authenticated/journey'
       path: '/journey'
@@ -397,6 +455,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/stats'
       preLoaderRoute: typeof AuthenticatedStatsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/answer': {
+      id: '/api/answer'
+      path: '/api/answer'
+      fullPath: '/api/answer'
+      preLoaderRoute: typeof ApiAnswerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/app-manifest': {
+      id: '/api/app-manifest'
+      path: '/api/app-manifest'
+      fullPath: '/api/app-manifest'
+      preLoaderRoute: typeof ApiAppManifestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/brand-icon': {
+      id: '/api/brand-icon'
+      path: '/api/brand-icon'
+      fullPath: '/api/brand-icon'
+      preLoaderRoute: typeof ApiBrandIconRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
@@ -507,6 +586,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAskRoute: typeof AuthenticatedAskRoute
   AuthenticatedJourneyRoute: typeof AuthenticatedJourneyRoute
   AuthenticatedQuestionsRoute: typeof AuthenticatedQuestionsRoute
   AuthenticatedStatsRoute: typeof AuthenticatedStatsRoute
@@ -526,6 +606,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAskRoute: AuthenticatedAskRoute,
   AuthenticatedJourneyRoute: AuthenticatedJourneyRoute,
   AuthenticatedQuestionsRoute: AuthenticatedQuestionsRoute,
   AuthenticatedStatsRoute: AuthenticatedStatsRoute,
@@ -556,6 +637,9 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ApiAnswerRoute: ApiAnswerRoute,
+  ApiAppManifestRoute: ApiAppManifestRoute,
+  ApiBrandIconRoute: ApiBrandIconRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }

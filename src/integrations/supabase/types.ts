@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_answer_blocks: {
+        Row: {
+          created_at: string
+          reason: string
+          status: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          reason: string
+          status: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          reason?: string
+          status?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_settings: {
         Row: {
           custom_api_key: string | null
@@ -895,6 +916,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      record_ai_answer_block: {
+        Args: { p_reason: string; p_status: number }
+        Returns: undefined
       }
       record_graded_attempt: {
         Args: {

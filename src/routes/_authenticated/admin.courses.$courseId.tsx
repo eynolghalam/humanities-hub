@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, ChevronLeft, BookOpen, Tag } from "lucide-react";
 import { BookCover } from "@/components/BookCover";
+import { optimizeImage } from "@/lib/image-optimization";
 
 export const Route = createFileRoute("/_authenticated/admin/courses/$courseId")({
   head: () => ({ meta: [
@@ -250,9 +251,9 @@ function BookDialog({ courseId, categories, book, children, onSaved }: { courseI
       setSavedBookId(id);
       let path = removeCover ? null : book?.cover_path ?? null;
       if (coverFile) {
-        const extension = coverFile.type === "image/png" ? "png" : coverFile.type === "image/webp" ? "webp" : "jpg";
-        uploadedPath = `${id}/${crypto.randomUUID()}.${extension}`;
-        const { error } = await supabase.storage.from("book-covers").upload(uploadedPath, coverFile, { contentType: coverFile.type });
+        const optimized = await optimizeImage(coverFile, 'cover');
+        uploadedPath = `${id}/${crypto.randomUUID()}.webp`;
+        const { error } = await supabase.storage.from("book-covers").upload(uploadedPath, optimized, { contentType: optimized.type });
         if (error) throw error;
         path = uploadedPath;
       }
@@ -284,8 +285,8 @@ function BookDialog({ courseId, categories, book, children, onSaved }: { courseI
             <Input id={`cover-${book?.id ?? "new"}`} type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} onChange={e => {
               const file = e.target.files?.[0];
               if (!file) return;
-              if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
-                toast.error("تصویر JPG، PNG یا WebP تا ۵ مگابایت انتخاب کنید."); e.target.value = ""; return;
+              if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 30 * 1024 * 1024) {
+                toast.error("تصویر JPG، PNG یا WebP تا ۳۰ مگابایت انتخاب کنید."); e.target.value = ""; return;
               }
               setCoverFile(file); setRemoveCover(false);
             }} />

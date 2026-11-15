@@ -22,6 +22,8 @@ import {
 import heroDefault from "@/assets/hozatona-hero.jpg";
 import manuscriptsDefault from "@/assets/manuscripts.jpg";
 import studyCircleDefault from "@/assets/study-circle.jpg";
+import { SiteLogo } from '@/components/SiteLogo';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -112,7 +114,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pb-16">
+      <main className="pb-28 md:pb-16">
         <section className="container mx-auto px-4 pt-5 md:pt-8">
           <div className="relative min-h-[510px] overflow-hidden rounded-lg bg-primary shadow-elegant md:min-h-[560px]">
             <img src={heroImage} alt={get("hero_image_alt", "طلبه در حال مطالعه در کتابخانه حوزوی")} width={1536} height={900} className="absolute inset-0 h-full w-full object-cover object-left" />
@@ -185,7 +187,8 @@ function Index() {
           </div>
         </section>
       </main>
-      <footer className="border-t border-border bg-primary py-10 text-primary-foreground"><div className="container mx-auto flex flex-col items-center justify-between gap-5 px-4 text-center md:flex-row md:text-start"><div><div className="flex items-center justify-center gap-2 text-xl font-extrabold md:justify-start"><BookOpen className="h-6 w-6" />{get("app_name", t("appName"))}</div><p className="mt-2 text-sm text-primary-foreground/65">{get("footer_text", "آموزش پیوسته و ساختارمند علوم حوزوی")}</p></div><p className="text-xs text-primary-foreground/55">{get("footer_copyright", "تمامی حقوق برای حوزتنا محفوظ است.")}</p></div></footer>
+      <footer className="border-t border-border bg-primary py-10 pb-28 text-primary-foreground md:pb-10"><div className="container mx-auto flex flex-col items-center justify-between gap-5 px-4 text-center md:flex-row md:text-start"><div><div className="flex items-center justify-center gap-2 text-xl font-extrabold md:justify-start"><SiteLogo className="h-9 w-9" />{get("app_name", t("appName"))}</div><p className="mt-2 text-sm text-primary-foreground/65">{get("footer_text", "آموزش پیوسته و ساختارمند علوم حوزوی")}</p></div><p className="text-xs text-primary-foreground/55">{get("footer_copyright", "تمامی حقوق برای حوزتنا محفوظ است.")}</p></div></footer>
+      <MobileBottomNav />
     </div>
   );
 }

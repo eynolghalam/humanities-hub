@@ -7,6 +7,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { Toaster } from "@/components/ui/sonner";
+import { BrandHead } from '@/components/BrandHead';
 
 function NotFoundComponent() {
   return (
@@ -52,9 +53,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
     ],
     links: [
-      { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "apple-touch-icon", href: "/icons/hozatona-180.png" },
-      { rel: "icon", type: "image/png", href: "/icons/hozatona-192.png" },
+      { rel: "manifest", href: "/api/app-manifest" },
+      { rel: "apple-touch-icon", href: "/api/brand-icon?type=apple" },
+      { rel: "icon", type: "image/png", href: "/api/brand-icon" },
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: "https://cdn.jsdelivr.net/npm/@jadijadi/amiafeminist/css/fonts/sans-light.css" },
       { rel: "stylesheet", href: "https://cdn.jsdelivr.net/npm/@jadijadi/amiafeminist/css/fonts/sans-regular.css" },
@@ -83,6 +84,7 @@ function RootComponent() {
       <ThemeProvider>
         <I18nProvider>
           <AuthProvider>
+            <BrandHead />
             <Outlet />
             <Toaster richColors position="top-center" />
           </AuthProvider>

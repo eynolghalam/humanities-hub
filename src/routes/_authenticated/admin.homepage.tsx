@@ -18,8 +18,17 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ChevronLeft, Plus, Pencil, Trash2, Image as ImageIcon, GripVertical } from "lucide-react";
+import { BrandEditor } from '@/components/BrandEditor';
+import { optimizeImage } from '@/lib/image-optimization';
 
 export const Route = createFileRoute("/_authenticated/admin/homepage")({
+  head: () => ({ meta: [
+    { title: 'تنظیم لوگو و صفحه اصلی | حوزتنا' },
+    { name: 'description', content: 'مدیریت لوگو، تصاویر و متن‌های صفحه اصلی حوزتنا.' },
+    { property: 'og:title', content: 'تنظیم لوگو و صفحه اصلی | حوزتنا' },
+    { property: 'og:description', content: 'تنظیم هویت تصویری و محتوای حوزتنا.' },
+    { property: 'og:type', content: 'website' }, { name: 'twitter:card', content: 'summary' },
+  ] }),
   component: HomepageEditor,
 });
 
@@ -128,6 +137,7 @@ function HomepageEditor() {
       </Link>
 
       <h1 className="text-3xl font-extrabold">{t("homepageEditor")}</h1>
+      <BrandEditor />
 
       <section className="mt-8 rounded-2xl border border-border bg-card p-6">
         <h2 className="mb-4 text-lg font-bold">{t("hero")} · {t("siteSettings")}</h2>
@@ -230,8 +240,10 @@ function HeroImageRow({ currentUrl, onSave }: { currentUrl: string | null; onSav
 
   const handleUpload = async (file: File) => {
     setUploading(true);
-    const path = `hero/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
-    const { error } = await supabase.storage.from("homepage-images").upload(path, file, { upsert: true });
+    let optimized: File;
+    try { optimized = await optimizeImage(file, 'hero'); } catch (e) { toast.error(e instanceof Error ? e.message : 'خطای تصویر'); setUploading(false); return; }
+    const path = `hero/${crypto.randomUUID()}.webp`;
+    const { error } = await supabase.storage.from("homepage-images").upload(path, optimized);
     if (error) { toast.error(error.message); setUploading(false); return; }
     const { data } = supabase.storage.from("homepage-images").getPublicUrl(path);
     onSave(data.publicUrl);
@@ -286,8 +298,10 @@ function BlockDialog({ block, children, onSaved }: { block?: Block; children: Re
 
   const uploadImg = async (file: File) => {
     setUploading(true);
-    const path = `blocks/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
-    const { error } = await supabase.storage.from("homepage-images").upload(path, file, { upsert: true });
+    let optimized: File;
+    try { optimized = await optimizeImage(file, 'block'); } catch (e) { toast.error(e instanceof Error ? e.message : 'خطای تصویر'); setUploading(false); return; }
+    const path = `blocks/${crypto.randomUUID()}.webp`;
+    const { error } = await supabase.storage.from("homepage-images").upload(path, optimized);
     if (error) { toast.error(error.message); setUploading(false); return; }
     const { data } = supabase.storage.from("homepage-images").getPublicUrl(path);
     setImageUrl(data.publicUrl);

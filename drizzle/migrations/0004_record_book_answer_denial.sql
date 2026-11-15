@@ -1,0 +1,5 @@
+CREATE FUNCTION public.record_ai_answer_block(p_reason text, p_status integer) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$ BEGIN IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Authentication required'; END IF; INSERT INTO public.ai_answer_blocks(user_id,reason,status) VALUES(auth.uid(),left(p_reason,1000),p_status) ON CONFLICT(user_id) DO UPDATE SET reason=excluded.reason,status=excluded.status; END $$;
+REVOKE ALL ON FUNCTION public.record_ai_answer_block(text,integer) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.record_ai_answer_block(text,integer) TO authenticated;
+GRANT DELETE ON public.ai_answer_blocks TO authenticated;
+CREATE POLICY "Admins clear restored AI access" ON public.ai_answer_blocks FOR DELETE TO authenticated USING (public.has_role(auth.uid(),'admin') OR public.has_role(auth.uid(),'owner'));
