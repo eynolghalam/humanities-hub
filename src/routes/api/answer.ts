@@ -84,7 +84,7 @@ export const Route = createFileRoute('/api/answer')({ server: { handlers: { POST
         if (!output && !request.signal.aborted) emit({ type: 'error', message: 'پاسخ قابل نمایش دریافت نشد؛ درخواست متوقف شد.' });
         emit({ type: 'done' }); controller.close();
       } catch { if (!request.signal.aborted) controller.enqueue(encoder.encode(JSON.stringify({ type: 'error', message: 'ارتباط پاسخ‌یار قطع شد.' }) + '\n')); controller.close(); }
-    }, cancel: () => iterator.return?.() });
+    }, cancel: async () => { await iterator.return?.(); } });
     return new Response(body, { headers: { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store', ...(gateway.getRunId() ? { 'X-Lovable-AIG-Run-ID': gateway.getRunId() || '' } : {}) } });
   } catch (e) {
     if (request.signal.aborted) return fail('درخواست متوقف شد.', 499);
