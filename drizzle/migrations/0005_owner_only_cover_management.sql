@@ -1,0 +1,8 @@
+DROP POLICY "Assigned educators upload book covers" ON storage.objects;
+DROP POLICY "Assigned educators delete book covers" ON storage.objects;
+DROP POLICY "Book covers readable when attached to a book" ON storage.objects;
+CREATE POLICY "Everyone reads attached book covers" ON storage.objects FOR SELECT TO anon, authenticated USING (bucket_id='book-covers' AND (EXISTS(SELECT 1 FROM public.books b WHERE b.cover_path=storage.objects.name) OR public.has_role(auth.uid(),'owner')));
+CREATE POLICY "Owner uploads book covers" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id='book-covers' AND owner_id=auth.uid()::text AND public.has_role(auth.uid(),'owner') AND EXISTS(SELECT 1 FROM public.books b WHERE b.id::text=(storage.foldername(name))[1]));
+CREATE POLICY "Owner deletes book covers" ON storage.objects FOR DELETE TO authenticated USING (bucket_id='book-covers' AND public.has_role(auth.uid(),'owner'));
+CREATE FUNCTION public.guard_book_cover_change() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$ BEGIN IF (TG_OP='INSERT' AND NEW.cover_path IS NOT NULL) OR (TG_OP='UPDATE' AND NEW.cover_path IS DISTINCT FROM OLD.cover_path) THEN IF auth.uid() IS NULL OR NOT public.has_role(auth.uid(),'owner') THEN RAISE EXCEPTION 'Only the owner can change book covers'; END IF; END IF; RETURN NEW; END $$;
+CREATE TRIGGER guard_book_cover_change BEFORE INSERT OR UPDATE ON public.books FOR EACH ROW EXECUTE FUNCTION public.guard_book_cover_change();

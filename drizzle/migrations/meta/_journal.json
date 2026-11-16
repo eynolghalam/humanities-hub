@@ -36,6 +36,13 @@
       "when": 1794748825852,
       "tag": "0004_record_book_answer_denial",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794808163129,
+      "tag": "0005_owner_only_cover_management",
+      "breakpoints": true
     }
   ]
 }

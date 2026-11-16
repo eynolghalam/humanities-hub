@@ -219,6 +219,7 @@ function ManageBooks() {
 
 function BookDialog({ courseId, categories, book, children, onSaved }: { courseId: string; categories: Category[]; book?: Book; children: React.ReactNode; onSaved: () => void }) {
   const { t } = useI18n();
+  const { isOwner } = useAuth();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(book?.title ?? "");
   const [description, setDescription] = useState(book?.description ?? "");
@@ -249,6 +250,7 @@ function BookDialog({ courseId, categories, book, children, onSaved }: { courseI
       if (result.error) throw result.error;
       const id = result.data.id;
       setSavedBookId(id);
+      if (!isOwner && (coverFile || removeCover)) throw new Error('فقط مالک می‌تواند جلد کتاب را تغییر دهد.');
       let path = removeCover ? null : book?.cover_path ?? null;
       if (coverFile) {
         const optimized = await optimizeImage(coverFile, 'cover');
@@ -257,8 +259,10 @@ function BookDialog({ courseId, categories, book, children, onSaved }: { courseI
         if (error) throw error;
         path = uploadedPath;
       }
-      const { error } = await supabase.from("books").update({ cover_path: path }).eq("id", id).select("id").single();
-      if (error) throw error;
+      if (isOwner && (coverFile || removeCover)) {
+        const { error } = await supabase.from("books").update({ cover_path: path }).eq("id", id).select("id").single();
+        if (error) throw error;
+      }
       if (book?.cover_path && book.cover_path !== path) await supabase.storage.from("book-covers").remove([book.cover_path]);
       toast.success("کتاب ذخیره شد");
       onSaved();
@@ -282,15 +286,15 @@ function BookDialog({ courseId, categories, book, children, onSaved }: { courseI
           <div className="space-y-3">
             <Label htmlFor={`cover-${book?.id ?? "new"}`}>تصویر جلد کتاب</Label>
             {preview ? <img src={preview} alt="پیش‌نمایش جلد کتاب" className="h-32 w-24 rounded-md border border-border object-contain" /> : !removeCover && book?.cover_path ? <BookCover path={book.cover_path} title={title} /> : null}
-            <Input id={`cover-${book?.id ?? "new"}`} type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} onChange={e => {
+            {isOwner && <Input id={`cover-${book?.id ?? "new"}`} type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} onChange={e => {
               const file = e.target.files?.[0];
               if (!file) return;
               if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 30 * 1024 * 1024) {
                 toast.error("تصویر JPG، PNG یا WebP تا ۳۰ مگابایت انتخاب کنید."); e.target.value = ""; return;
               }
               setCoverFile(file); setRemoveCover(false);
-            }} />
-            {(coverFile || (book?.cover_path && !removeCover)) && <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={() => { setCoverFile(null); setRemoveCover(true); }}>حذف جلد</Button>}
+            }} />}
+            {isOwner && (coverFile || (book?.cover_path && !removeCover)) && <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={() => { setCoverFile(null); setRemoveCover(true); }}>حذف جلد</Button>}
           </div>
           <div className="space-y-2">
             <Label>{t("category")}</Label>
