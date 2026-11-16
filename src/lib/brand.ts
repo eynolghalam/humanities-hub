@@ -13,6 +13,15 @@ export const brandQuery = queryOptions({
   queryFn: async () => {
     const { data, error } = await supabase.from('site_settings').select('value_fa').eq('key', 'brand_assets').maybeSingle();
     if (error) throw error;
-    return parseBrand(data?.value_fa);
+    const brand = parseBrand(data?.value_fa);
+    if (!brand) return null;
+    for (const key of ['logo', 'icon', 'apple', 'app'] as const) {
+      const path = brand.paths.find(path => path.includes(`-${key}.`));
+      if (!path) continue;
+      const { data, error } = await supabase.storage.from('homepage-images').createSignedUrl(path, 3600);
+      if (error) throw error;
+      brand[key] = data.signedUrl;
+    }
+    return brand;
   },
 });

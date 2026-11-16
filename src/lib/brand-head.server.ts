@@ -6,5 +6,13 @@ export async function readPublicBrand() {
   if (!url || !key) return null;
   const client = createClient(url, key, { auth: { persistSession: false }, global: { fetch: (input, init) => { const headers = new Headers(init?.headers); if (key.startsWith('sb_')) headers.delete('Authorization'); headers.set('apikey', key); return fetch(input, { ...init, headers }); } } });
   const { data } = await client.from('site_settings').select('value_fa').eq('key', 'brand_assets').maybeSingle();
-  return parseBrand(data?.value_fa);
+  const brand = parseBrand(data?.value_fa);
+  if (!brand) return null;
+  for (const key of ['logo', 'icon', 'apple', 'app'] as const) {
+    const path = brand.paths.find(path => path.includes(`-${key}.`));
+    if (!path) continue;
+    const { data } = await client.storage.from('homepage-images').createSignedUrl(path, 3600);
+    if (data) brand[key] = data.signedUrl;
+  }
+  return brand;
 }
