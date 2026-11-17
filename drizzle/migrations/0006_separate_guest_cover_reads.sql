@@ -1,0 +1,2 @@
+ALTER POLICY "Everyone reads attached book covers" ON storage.objects USING (bucket_id='book-covers' AND EXISTS(SELECT 1 FROM public.books b WHERE b.cover_path=storage.objects.name));
+CREATE POLICY "Owner reads unattached covers" ON storage.objects FOR SELECT TO authenticated USING(bucket_id='book-covers' AND public.has_role(auth.uid(),'owner'));

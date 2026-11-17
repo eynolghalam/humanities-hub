@@ -917,6 +917,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_attached_book_cover: { Args: { p_path: string }; Returns: boolean }
       record_ai_answer_block: {
         Args: { p_reason: string; p_status: number }
         Returns: undefined
