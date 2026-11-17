@@ -11,6 +11,7 @@ import { MessageCircleQuestion, Send, CheckCircle2, User2, GraduationCap, BookOp
 import { toast } from "sonner";
 import DOMPurify from "dompurify";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { useSignInPrompt } from './SignInPrompt';
 
 const clean = (html: string) => DOMPurify.sanitize(html ?? "", { USE_PROFILES: { html: true } });
 const isEmptyHtml = (html: string) => !html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
@@ -55,6 +56,7 @@ export function QASection({
   title?: string;
 }) {
   const { user, isAdmin, isTeacher, isOwner } = useAuth();
+  const requestSignIn = useSignInPrompt();
   const isStaff = isAdmin || isTeacher || isOwner;
   const qc = useQueryClient();
   const [newTitle, setNewTitle] = useState("");
@@ -65,6 +67,7 @@ export function QASection({
 
   const { data: questions } = useQuery({
     queryKey,
+    enabled: Boolean(user),
     queryFn: async () => {
       let q = supabase
         .from("questions")
@@ -137,6 +140,11 @@ export function QASection({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  if (!user) return <section className="mb-6 border-t border-border pt-6">
+    <h2 className="mb-3 text-lg font-bold">{title}</h2>
+    <Button onClick={() => requestSignIn(() => {}, 'teacher')} className="gap-2"><MessageCircleQuestion className="h-4 w-4" />پرسش از استاد</Button>
+  </section>;
+
   return (
     <section className="bg-card-soft mb-6 rounded-2xl border border-border p-6 shadow-soft">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -174,7 +182,7 @@ export function QASection({
         </p>
       ) : (
         <div className="space-y-3">
-          {questions!.map(q => (
+          {(questions ?? []).map(q => (
             <QuestionThread
               key={q.id}
               question={q}

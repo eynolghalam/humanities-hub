@@ -10,10 +10,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, Sparkles, Trophy, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useSignInPrompt } from './SignInPrompt';
 
 export function ExerciseSection({ lessonId, noExamRequired = false }: { lessonId: string; noExamRequired?: boolean }) {
   const { t } = useI18n();
-  const { isAdmin, isTeacher } = useAuth();
+  const { user, isAdmin, isTeacher } = useAuth();
+  const requestSignIn = useSignInPrompt();
   const qc = useQueryClient();
   const gradeFn = useServerFn(gradeAnswer);
   const extractFn = useServerFn(extractOrGenerateExercises);
@@ -21,6 +23,7 @@ export function ExerciseSection({ lessonId, noExamRequired = false }: { lessonId
 
   const { data: exercises, isLoading } = useQuery({
     queryKey: ["exercises", lessonId],
+    enabled: Boolean(user),
     queryFn: async () => {
       const { data } = await supabase
         .from("lesson_exercises")
@@ -52,6 +55,10 @@ export function ExerciseSection({ lessonId, noExamRequired = false }: { lessonId
     );
   }
 
+  if (!user) return <section className="mb-6 border-t border-border pt-6">
+    <h2 className="mb-3 text-lg font-bold">{t('exercises')}</h2>
+    <Button variant="outline" className="gap-2" onClick={() => requestSignIn(() => {})}><Sparkles className="h-4 w-4" />تمرین و ارزیابی با هوش مصنوعی</Button>
+  </section>;
   if (isLoading) return null;
 
   return (

@@ -2,11 +2,12 @@ import { Link } from "@tanstack/react-router";
 import { BookOpen, Map, BarChart3, MessageCircleQuestion, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
+import { useSignInPrompt } from './SignInPrompt';
 
 export function MobileBottomNav() {
   const { t } = useI18n();
   const { user } = useAuth();
-  if (!user) return null;
+  const requestSignIn = useSignInPrompt();
   const items = [
     { to: "/courses", label: t("courses"), icon: BookOpen },
     { to: "/journey", label: t("journey"), icon: Map },
@@ -25,6 +26,7 @@ export function MobileBottomNav() {
           <li key={to}>
             <Link
               to={to}
+              onClick={e => { if (!user && to !== '/courses') { e.preventDefault(); requestSignIn(() => {}, to === '/questions' ? 'teacher' : to === '/ask' ? 'ai' : 'progress'); } }}
               className="group flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] font-semibold text-muted-foreground transition-colors"
               activeProps={{ className: "text-primary", "aria-current": "page" }}
             >

@@ -57,6 +57,13 @@
       "when": 1794930355272,
       "tag": "0007_public_attached_cover_lookup",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794930859339,
+      "tag": "0008_public_book_text_reading",
+      "breakpoints": true
     }
   ]
 }

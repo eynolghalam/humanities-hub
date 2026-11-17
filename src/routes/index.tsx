@@ -24,6 +24,7 @@ import manuscriptsDefault from "@/assets/manuscripts.jpg";
 import studyCircleDefault from "@/assets/study-circle.jpg";
 import { SiteLogo } from '@/components/SiteLogo';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { useSignInPrompt } from '@/components/SignInPrompt';
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -62,6 +63,7 @@ const defaultEditorial = [
 function Index() {
   const { t, dir, pick } = useI18n();
   const { user } = useAuth();
+  const requestSignIn = useSignInPrompt();
   const { data: settings } = useQuery({
     queryKey: ["site_settings"],
     queryFn: async () => {
@@ -104,7 +106,7 @@ function Index() {
   const editorials = editorialBlocks.length > 0 ? editorialBlocks.slice(0, 2) : defaultEditorial;
   const heroImage = settings?.hero_image_url?.value_fa || heroDefault;
   const totalBooks = (courses ?? []).reduce((sum, course) => sum + ((course.books as unknown as { count: number }[])?.[0]?.count ?? 0), 0);
-  const primaryTarget = user ? "/courses" : "/auth";
+  const primaryTarget = "/courses";
 
   const renderIcon = (name: string | null) => {
     if (!name) return BookOpen;
@@ -152,12 +154,12 @@ function Index() {
         <section className="container mx-auto px-4 pt-20">
           <div className="mb-7 flex items-end justify-between gap-4">
             <div><p className="text-xs font-bold text-primary">{get("courses_eyebrow", "نقشه راه تحصیل")}</p><h2 className="mt-2 text-2xl font-extrabold md:text-3xl">{get("courses_title", "درس‌ها و پایه‌های آموزشی")}</h2></div>
-            {user && <Link to="/courses" className="flex items-center gap-1 text-sm font-bold text-primary">مشاهده همه <ChevronLeft className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} /></Link>}
+            <Link to="/courses" className="flex items-center gap-1 text-sm font-bold text-primary">مشاهده همه <ChevronLeft className={`h-4 w-4 ${dir === "ltr" ? "rotate-180" : ""}`} /></Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {(courses ?? []).map((course, index) => {
               const bookCount = (course.books as unknown as { count: number }[])?.[0]?.count ?? 0;
-              return <Link key={course.id} to={user ? "/courses/$courseId" : "/auth"} params={user ? { courseId: course.id } : undefined} className="group min-h-48 rounded-lg border border-border bg-card p-6 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-elegant">
+              return <Link key={course.id} to="/courses/$courseId" params={{ courseId: course.id }} className="group min-h-48 rounded-lg border border-border bg-card p-6 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-elegant">
                 <div className="flex items-start justify-between"><span className="text-4xl font-extrabold text-primary/20">{String(index + 1).padStart(2, "0")}</span><div className="flex h-10 w-10 items-center justify-center rounded-md bg-secondary"><BookOpen className="h-5 w-5 text-primary" /></div></div>
                 <h3 className="mt-7 text-xl font-bold group-hover:text-primary">{course.title}</h3>
                 <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">{course.description || `${bookCount} کتاب در این پایه`}</p>

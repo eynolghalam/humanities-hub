@@ -8,6 +8,7 @@ import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { Toaster } from "@/components/ui/sonner";
 import { BrandHead } from '@/components/BrandHead';
+import { SignInPromptProvider } from '@/components/SignInPrompt';
 
 function NotFoundComponent() {
   return (
@@ -84,9 +85,11 @@ function RootComponent() {
       <ThemeProvider>
         <I18nProvider>
           <AuthProvider>
+            <SignInPromptProvider>
             <BrandHead />
             <Outlet />
             <Toaster richColors position="top-center" />
+            </SignInPromptProvider>
           </AuthProvider>
         </I18nProvider>
       </ThemeProvider>

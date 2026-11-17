@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Open course, book and lesson text/translation pages to guests
+- [ ] Add optional sign-in confirmation for AI and teacher communication
+- [ ] Verify guest reading and confirmation on desktop/mobile
+
 - [x] Optimize existing and future book-cover uploads for their display size
 - [x] Add centrally managed logo, browser icon and installation icons
 - [x] Add book-scoped AI answering for text, images and PDFs with desktop/mobile navigation

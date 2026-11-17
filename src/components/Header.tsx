@@ -13,6 +13,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { InstallApp } from "@/components/InstallApp";
 import { SiteLogo } from '@/components/SiteLogo';
 import { Sparkles } from 'lucide-react';
+import { useSignInPrompt } from './SignInPrompt';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +33,7 @@ export function Header() {
   const navigate = useNavigate();
   const { currentTheme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
+  const requestSignIn = useSignInPrompt();
 
   const handleSignOut = async () => {
     await signOut();
@@ -95,9 +97,9 @@ export function Header() {
         </div>
 
         <nav className="hidden items-center gap-2 md:flex">
-          <Button asChild variant="ghost" size="sm" className="gap-1.5"><Link to={user ? '/ask' : '/auth'}><Sparkles className="h-4 w-4" />پاسخ‌یار</Link></Button>
+          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => requestSignIn(() => navigate({ to: '/ask' }))}><Sparkles className="h-4 w-4" />پاسخ‌یار</Button>
           {user && <StatsBar />}
-          {user && (
+          {(
             <Link to="/courses">
               <Button variant="ghost" size="sm">{t("courses")}</Button>
             </Link>
@@ -118,8 +120,8 @@ export function Header() {
               </Button>
             </Link>
           )}
-          {user && (
-            <Link to="/questions">
+          {(
+            <Link to="/questions" onClick={e => { if (!user) { e.preventDefault(); requestSignIn(() => navigate({ to: '/questions' }), 'teacher'); } }}>
               <Button variant="ghost" size="sm" className="gap-1.5">
                 <MessageCircleQuestion className="h-4 w-4" />
                 <span className="hidden sm:inline">پرسش و پاسخ</span>
